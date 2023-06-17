@@ -4,6 +4,7 @@
 #include "Universe/Planet.h"
 
 #include "StarisStatics.h"
+#include "Empire/Colony.h"
 #include "UI/PlanetToolTip.h"
 #include "Universe/System.h"
 
@@ -37,7 +38,13 @@ UToolTip* UPlanet::CreateToolTip()
 
 void UPlanet::SetupToolTip(UToolTip* ToolTip)
 {
-	Cast<UPlanetToolTip>(ToolTip)->SetupToolTip(FText::FromName(Id), FText::FromName(System->GetId()), 15251418, FText::FromName(Biome));
+	Cast<UPlanetToolTip>(ToolTip)->SetupToolTip(
+		GetTitle(),
+		System->GetTitle(),
+		Colony ? Colony->getTotalPopulationAmount() : 0,
+		FText::FromName(Biome),
+		TemperatureDay,
+		TemperatureNight);
 }
 
 void UPlanet::OnInitCelestialEntity()
@@ -55,6 +62,8 @@ void UPlanet::ApplyPattern_Implementation(const FPlanetMetaData& Data)
 
 	Id = Data.Id;
 	Biome = Data.Biome;
+	TemperatureNight = Data.TemperatureMin;
+	TemperatureDay = Data.TemperatureMax;
 	Rename(*FString::Printf(TEXT("Planet_%s"), *Id.ToString()));
 	
 	SetRelativeScale3D(FVector(Data.Scale));

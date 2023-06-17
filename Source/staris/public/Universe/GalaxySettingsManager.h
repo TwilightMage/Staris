@@ -7,6 +7,8 @@
 #include "GalaxySettingsManager.generated.h"
 
 class UStarisGameInstance;
+class UGalaxySettings;
+
 /**
  * 
  */
@@ -31,8 +33,6 @@ public:
 		
 		return nullptr;
 	}
-	
-	const TArray<TSubclassOf<UGalaxySettings>>& GetAllSettingsClasses() const { return SettingsClasses; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TMap<TSubclassOf<UGalaxySettings>, UGalaxySettings*> SettingsObjects;

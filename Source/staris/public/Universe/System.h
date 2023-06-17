@@ -13,6 +13,7 @@ class AGalaxy;
 class AStaticMeshActor;
 class UPlanet;
 class UStar;
+class UEmpire;
 
 UCLASS()
 class STARIS_API ASystem : public AActor, public ICelestialEntity
@@ -30,9 +31,14 @@ public:
 	UFUNCTION(BlueprintPure)
 	UEmpire* GetOwningEmpire();
 
+	FText GetTitle() const { return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(Title); }
+
 	const FName& GetId() const { return Id; }
 	const TArray<UStar*>& GetStars() const { return Stars; }
 	const TArray<UPlanet*>& GetPlanets() const { return Planets; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString Title;
 	
 protected:
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))

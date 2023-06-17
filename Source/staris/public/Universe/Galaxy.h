@@ -82,26 +82,22 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	TArray<ASystem*> Systems;
-	
-	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
-	TArray<ICelestialEntity*> CelestialEntities;
 
 	UPROPERTY()
 	FTimerHandle DayTickHandle;
 
 	bool bIsGameStarted;
 
-	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	TArray<ICelestialEntity*> CelestialEntities;
+
 	TArray<ICelestialEntity*> DayUpdateCelestialEntities;
 	TArray<ICelestialEntity*> AddDayUpdateCelestialEntities;
 	TArray<ICelestialEntity*> RemoveDayUpdateCelestialEntities;
 	
-	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	TArray<ICelestialEntity*> MonthUpdateCelestialEntities;
 	TArray<ICelestialEntity*> AddMonthUpdateCelestialEntities;
 	TArray<ICelestialEntity*> RemoveMonthUpdateCelestialEntities;
 
-	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	TArray<ICelestialEntity*> YearUpdateCelestialEntities;
 	TArray<ICelestialEntity*> AddYearUpdateCelestialEntities;
 	TArray<ICelestialEntity*> RemoveYearUpdateCelestialEntities;

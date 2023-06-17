@@ -4,11 +4,27 @@
 #include "Universe/Star.h"
 
 #include "StarisStatics.h"
-
+#include "UI/StarToolTip.h"
+#include "Universe/CompositeDatabase.h"
+#include "Universe/System.h"
+#include "Universe/VanillaStarTypeProperties.h"
 
 UStar::UStar()
 {
 
+}
+
+UToolTip* UStar::CreateToolTip()
+{
+	return NewObject<UStarToolTip>(this, ToolTipClass);
+}
+
+void UStar::SetupToolTip(UToolTip* ToolTip)
+{
+	Cast<UStarToolTip>(ToolTip)->SetupToolTip(
+		GetTitle(),
+		System->GetTitle(),
+		FText::FromString(TypeRecord->GetOrCreateComponent<UVanillaStarTypeProperties>()->Title));
 }
 
 void UStar::ApplyPattern_Implementation(const FStarMetaData& Data)
@@ -20,8 +36,11 @@ void UStar::ApplyPattern_Implementation(const FStarMetaData& Data)
 	}
 
 	Id = Data.Id;
-	Type = Data.Type;
+	TypeRecord = Data.Type;
 	Rename(*FString::Printf(TEXT("Star_%s"), *Id.ToString()));
+
+	auto VanillaTypeProps = TypeRecord->GetComponent<UVanillaStarTypeProperties>();
+	SetMaterial(0, VanillaTypeProps->MaterialInstance);
 	
 	SetRelativeLocation(Data.Location);
 	SetRelativeScale3D(FVector(Data.Scale));

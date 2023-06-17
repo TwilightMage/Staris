@@ -3,7 +3,7 @@
 
 #include "Game/StarisPlayerController.h"
 
-#include "Empire.h"
+#include "Empire/Empire.h"
 #include "Focusable.h"
 #include "Game/StarisPlayerPawn.h"
 #include "UI/ToolTip.h"

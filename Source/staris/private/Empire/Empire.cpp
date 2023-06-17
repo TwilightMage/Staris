@@ -1,17 +1,12 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Empire.h"
+#include "Empire/Empire.h"
 
 #include "StarisStatics.h"
 #include "Game/StarisController.h"
 #include "Game/StarisPlayerController.h"
 #include "Universe/System.h"
-
-FText UEmpire::GetTitle() const
-{
-	return NSLOCTEXT("-", "-", "Great Foxik Empire");
-}
 
 void UEmpire::AssignController(IStarisController* Controller)
 {
@@ -20,7 +15,7 @@ void UEmpire::AssignController(IStarisController* Controller)
 	
 	OwningControllers.Add(Controller);
 	Controller->OnEmpireAssigned(this);
-	UE_LOG(LogStaris, Log, TEXT("Empire \"%s\" Assigned to %s %s"), *GetTitle().ToString(), Controller->IsPlayer() ? TEXT("player") : TEXT("bot"), *Controller->GetControllerName());
+	UE_LOG(LogStaris, Log, TEXT("Empire \"%s\" Assigned to %s %s"), *Title, Controller->IsPlayer() ? TEXT("player") : TEXT("bot"), *Controller->GetControllerName());
 }
 
 void UEmpire::RemoveController(IStarisController* Controller)
@@ -58,7 +53,7 @@ void UEmpire::TakeSystem(ASystem* System)
 		OldEmpire->OwnedSystems.Remove(System);
 		OldEmpire->SystemChanged.Broadcast(System, false);
 
-		UE_LOG(LogStaris, Log, TEXT("System %s was lost by empire \"%s\""), *System->Id.ToString(), *OldEmpire->GetTitle().ToString());
+		UE_LOG(LogStaris, Log, TEXT("System %s was lost by empire \"%s\""), *System->Id.ToString(), *OldEmpire->Title);
 	}
 
 	System->OwningEmpire = this;
@@ -66,7 +61,7 @@ void UEmpire::TakeSystem(ASystem* System)
 	OwnedSystems.Add(System);
 	SystemChanged.Broadcast(System, true);
 
-	UE_LOG(LogStaris, Log, TEXT("System %s was taken by empire \"%s\""), *System->Id.ToString(), *GetTitle().ToString());
+	UE_LOG(LogStaris, Log, TEXT("System %s was taken by empire \"%s\""), *System->Id.ToString(), *Title);
 }
 
 void UEmpire::SystemTaken(ASystem* System)

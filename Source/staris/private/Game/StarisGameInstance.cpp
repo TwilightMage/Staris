@@ -3,6 +3,9 @@
 
 #include "Game/StarisGameInstance.h"
 
+#include "..\..\public\Universe\CompositeDatabase.h"
+#include "Universe/StarTypeProperties.h"
+
 void UStarisGameInstance::InitAssets_Implementation ()
 {
 	//FStarMetaData::Collection.Add(FStarMetaData::TYPE_Blue, UJsonUtils::StringToJson("{\"color\": {\"R\": 0, \"G\": 0, \"B\": 1, \"A\": 1}}"));
@@ -11,9 +14,14 @@ void UStarisGameInstance::InitAssets_Implementation ()
 	//FStarMetaData::Collection.Add(FStarMetaData::TYPE_Black_Star, UJsonUtils::StringToJson("{\"color\": {\"R\": 0, \"G\": 0, \"B\": 0, \"A\": 1}}"));
 }
 
-void UStarisGameInstance::PostLoad()
+void UStarisGameInstance::Init()
 {
-	Super::PostLoad();
+	Super::Init();
+
+	StarTypeDatabase = NewObject<UCompositeDatabase>();
+	StarTypeDatabase->RecordComponentType = UStarTypeProperties::StaticClass();
+
+	InitAssets();
 }
 
 bool UStarisGameInstance::SwitchGameStage(EGameStage NewGameStage)

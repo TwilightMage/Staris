@@ -41,6 +41,7 @@ void ASystem::ApplyPattern_Implementation(const FSystemMetaData& Data)
 			StarEntity->InitCelestialEntity(Galaxy);
 			StarEntity->ApplyPattern(Star);
 
+			StarEntity->System = this;
 			Stars.Add(StarEntity);
 		}
 

@@ -5,6 +5,8 @@
 
 #include "GalaxyMetaData.generated.h"
 
+class UCompositeRecord;
+
 USTRUCT(BlueprintType)
 struct FPlanetRegionMetadata
 {
@@ -35,7 +37,7 @@ struct FStarMetaData
 	FName Id;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FName Type;
+	UCompositeRecord* Type = nullptr;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FVector Location;
@@ -60,6 +62,12 @@ struct FPlanetMetaData
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FName Biome;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	int32 TemperatureMin;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	int32 TemperatureMax;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float Scale;

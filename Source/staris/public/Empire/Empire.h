@@ -6,6 +6,8 @@
 #include "UObject/Object.h"
 #include "Empire.generated.h"
 
+class URace;
+class UPlanet;
 class ASystem;
 class AStarisPlayerController;
 class IStarisController;
@@ -24,8 +26,6 @@ class STARIS_API UEmpire : public UObject
 	friend ASystem;
 	
 public:
-	FText GetTitle() const;
-
 	const TArray<IStarisController*>& GetOwningControllers() const { return OwningControllers; }
 	void AssignController(IStarisController* Controller);
 	void RemoveController(IStarisController* Controller);
@@ -36,6 +36,15 @@ public:
 	
 	const TArray<ASystem*>& GetOwnedSystems() const { return OwnedSystems; }
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString Title;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPlanet* Capital;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<URace*> FounderRaces;
+	
 	FEmpireSystemChanged SystemChanged;
 
 private:

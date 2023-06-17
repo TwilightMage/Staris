@@ -8,6 +8,7 @@
 
 #include "VanillaGalaxyGenerator.generated.h"
 
+class UCompositeDatabase;
 /**
  * 
  */

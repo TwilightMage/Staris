@@ -9,8 +9,10 @@
 
 #include "Planet.generated.h"
 
+class UColony;
 class UPlanetToolTip;
 class AGalaxy;
+class ASystem;
 class USceneComponent;
 
 UCLASS()
@@ -31,7 +33,15 @@ public:
 	virtual UToolTip* CreateToolTip() override;
 	virtual void SetupToolTip(UToolTip* ToolTip) override;
 
+	FText GetTitle() const { return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(Title); }
+	
 	const FName& GetId() const { return Id; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UColony* Colony;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString Title;
 
 	FVector OrbitPoint;
 	float OrbitOffset;
@@ -46,6 +56,12 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	FName Biome;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	int32 TemperatureDay;
+	
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	int32 TemperatureNight;
 
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UPlanetToolTip> ToolTipClass;

@@ -3,6 +3,7 @@
 
 #include "Universe/VanillaGalaxyGenerator.h"
 
+#include "Universe/CompositeDatabase.h"
 #include "Universe/GalaxySettingsManager.h"
 #include "Universe/VanillaGalaxySettings.h"
 
@@ -54,22 +55,22 @@ void UVanillaGalaxyGenerator::GenerateSystem(FSystemMetaData& Data, int32 SubSee
 		
 		FRandomStream Random(Seed);
 
-		bool BlackStar = Random.FRand() > 0.5;
+		bool BlackHole = Random.FRand() < 0.1;
 
 		Data.Id = GenerateName(Seed);
 		Data.Stars.SetNum(1);
-		Data.Planets.SetNum(BlackStar ? 0 : Random.RandRange(3, 7));
+		Data.Planets.SetNum(BlackHole ? 0 : Random.RandRange(3, 7));
 
 		float Angle = Random.FRand();
 		float Dist = Random.FRand();
 
 		Dist += FMath::Cos(Dist * 3.14) * 0.1;
 
-		Data.Location = FVector(FMath::Sin(3.14 * 2 * Angle) * 50000 * Dist, FMath::Cos(3.14 * 2 * Angle) * 50000 * Dist, Random.FRand() * 100) * 5;
+		Data.Location = FVector(FMath::Sin(3.14 * 2 * Angle) * 50000 * Dist, FMath::Cos(3.14 * 2 * Angle) * 50000 * Dist, Random.FRand() * 1000 - 500) * 5;
 
-		if (BlackStar)
+		if (BlackHole)
 		{
-			Data.Stars[0].Type = FStarMetaData::TYPE_Black_Hole;
+			Data.Stars[0].Type = StarTypeDatabase->GetOrCreateRecord(FStarMetaData::TYPE_Black_Hole);
 		}
 		for (auto& Star : Data.Stars)
 		{
@@ -134,7 +135,7 @@ void UVanillaGalaxyGenerator::GenerateStar(FStarMetaData& Data, int32 SubSeed, A
 
 		Data.Id = GenerateName(Seed);
 		
-		if (Data.Type.IsNone()) Data.Type = GetRandomSetItem(StarTypes, Random);
+		if (!Data.Type) Data.Type = StarTypeDatabase->GetOrCreateRecord(GetRandomSetItem(StarTypes, Random));
 
 		Data.Location = FVector::Zero();
 		Data.Scale = Random.FRandRange(0.5, 1.0);
@@ -143,6 +144,9 @@ void UVanillaGalaxyGenerator::GenerateStar(FStarMetaData& Data, int32 SubSeed, A
 
 void UVanillaGalaxyGenerator::GeneratePlanet(FPlanetMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager) const
 {
+	const float OrbitRange = 2000;
+	const float OrbitOffset = 300;
+	
 	if (auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
 	{
 		auto Seed = Settings->Seed * SubSeed;
@@ -161,8 +165,15 @@ void UVanillaGalaxyGenerator::GeneratePlanet(FPlanetMetaData& Data, int32 SubSee
 		Data.Scale = Random.FRandRange(0.5, 1.0);
 		Data.OrbitOffset = Random.FRand();
 		Data.OrbitPoint = FVector::Zero();
-		Data.OrbitDistance = Random.FRandRange(100, 500);
 		Data.OrbitSpeed = Random.FRandRange(0.5, 2.0);
+		
+		const float Orbit = Random.FRandRange(0, OrbitRange);
+		Data.OrbitDistance = OrbitOffset + Orbit;
+
+		const int32 TemperatureRange = Random.RandRange(20, 100);
+		const int32 TemperatureOffset = (1 - (Orbit / OrbitRange)) * 800 - 400;
+		Data.TemperatureMin = TemperatureOffset - TemperatureRange / 2;
+		Data.TemperatureMax = TemperatureOffset + TemperatureRange / 2;
 
 		for (auto& Region : Data.Regions)
 		{

@@ -6,6 +6,7 @@
 #include "GameFramework/GameMode.h"
 #include "StarisGameMode.generated.h"
 
+class UEmpireGenerator;
 class UGalaxySettings;
 class UEmpire;
 
@@ -23,7 +24,6 @@ public:
 
 private:
 	void GenerateGalaxy();
-	TArray<UEmpire*> PopulateEmpires(int32 Num);
 
 	UFUNCTION()
 	void GameStarted(bool IsVeryFirstStart);
@@ -32,9 +32,6 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	TArray<UEmpire*> Empires;
-
-	UPROPERTY()
-	TMap<TSubclassOf<UGalaxySettings>, UGalaxySettings*> GalaxySettings;
 
 	bool SetupDone = false;
 };

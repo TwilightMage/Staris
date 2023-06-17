@@ -3,14 +3,12 @@
 
 #include "Game/StarisGameMode.h"
 
-#include "Empire.h"
-#include "StarisStatics.h"
-#include "StarisUtils.h"
+#include "Empire/Empire.h"
+#include "Empire/Race.h"
+#include "Empire/UnitedEmpireGenerator.h"
 #include "Game/StarisPlayerController.h"
 #include "Game/StarisPlayerPawn.h"
 #include "Universe/Galaxy.h"
-#include "Universe/Star.h"
-#include "Universe/System.h"
 
 AStarisGameMode::AStarisGameMode()
 	: AGameMode()
@@ -52,48 +50,6 @@ void AStarisGameMode::GenerateGalaxy()
 	}
 }
 
-TArray<UEmpire*> AStarisGameMode::PopulateEmpires(int32 Num)
-{
-	if (Num == 0) return {};
-	
-	if (auto Galaxy = AGalaxy::GetGalaxy(this))
-	{
-		TArray<ASystem*> FreeHabitableSystems;
-		for (const auto& System : Galaxy->GetSystems())
-		{
-			if (System->GetOwningEmpire() == nullptr && System->GetPlanets().Num() > 0)
-			{
-				FreeHabitableSystems.Add(System);
-			}
-		}
-
-		if (Num > FreeHabitableSystems.Num())
-		{
-			UE_LOG(LogStaris, Error, TEXT("Failed to populate %i empires due to the lack of unowned systems. Only %i empires will be populated"), Num, FreeHabitableSystems.Num());
-		}
-
-		TArray<UEmpire*> Result;
-		for (int32 i = 0; i < Num && i < FreeHabitableSystems.Num(); i++)
-		{
-			auto Empire = NewObject<UEmpire>();
-			
-			auto System = FreeHabitableSystems[FMath::RandRange(0, FreeHabitableSystems.Num() - 1)];
-			Empire->TakeSystem(System);
-			UStarisUtils::FillPlanetPopulation(GetRandomArrayItem(System->GetPlanets()), Empire);
-
-			UE_LOG(LogStaris, Log, TEXT("Empire \"%s\" spawned on system %s"), *Empire->GetTitle().ToString(), *System->GetId().ToString());
-
-			Empires.Add(Empire);
-			Result.Add(Empire);
-			FreeHabitableSystems.Remove(System);
-		}
-
-		return Result;
-	}
-
-	return {};
-}
-
 void AStarisGameMode::GameStarted(bool IsVeryFirstStart)
 {
 	
@@ -108,9 +64,17 @@ void AStarisGameMode::Setup()
 	if (auto Galaxy = AGalaxy::GetGalaxy(this))
 	{
 		Galaxy->GameStarted.AddUObject(this, &AStarisGameMode::GameStarted);
-	}
 
-	PopulateEmpires(1);
+		auto EmpireGenerator = NewObject<UUnitedEmpireGenerator>();
+		EmpireGenerator->EmpireTitle = "Great Foxik Empire";
+		EmpireGenerator->SystemTitle = "Solus";
+		EmpireGenerator->CapitalTitle = "Terra";
+		auto EmpireRace = NewObject<URace>();
+		EmpireRace->Title = "Foxus";
+		EmpireGenerator->EmpireRaces = { EmpireRace };
+		EmpireGenerator->TotalPops = 8000000;
+		Empires.Add(EmpireGenerator->Generate(Galaxy));
+	}
 	
 	SetupDone = true;
 }

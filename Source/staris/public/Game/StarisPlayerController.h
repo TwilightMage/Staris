@@ -9,6 +9,7 @@
 #include "StarisPlayerController.generated.h"
 
 class IFocusable;
+class UToolTip;
 
 UCLASS()
 class STARIS_API AStarisPlayerController : public APlayerController, public IStarisController

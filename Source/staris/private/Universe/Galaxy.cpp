@@ -3,6 +3,7 @@
 #include "Universe/Galaxy.h"
 
 #include "StarisStatics.h"
+#include "Game/StarisGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Universe/CelestialEntity.h"
 #include "Universe/GalaxySettingsManager.h"
@@ -164,14 +165,18 @@ void AGalaxy::DayPassed()
 
 void AGalaxy::Generate()
 {
-	if (auto Settings = Cast<AGalaxySettingsManager>(UGameplayStatics::GetActorOfClass(this, AGalaxySettingsManager::StaticClass())))
+	if (auto Settings = GetActorOfClass<AGalaxySettingsManager>(this))
 	{
-		auto generator = NewObject<UVanillaGalaxyGenerator>();
+		if (auto StarisGameInstance = Cast<UStarisGameInstance>(UGameplayStatics::GetGameInstance(this)))
+		{
+			auto generator = NewObject<UVanillaGalaxyGenerator>();
+			generator->StarTypeDatabase = StarisGameInstance->GetStarTypeDatabase();
 		
-		FGalaxyMetaData data;
-		generator->GenerateGalaxy(data, 1, Settings);
+			FGalaxyMetaData data;
+			generator->GenerateGalaxy(data, 1, Settings);
 
-		ApplyPattern(data);
+			ApplyPattern(data);
+		}
 	}
 }
 

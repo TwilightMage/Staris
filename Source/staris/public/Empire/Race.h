@@ -4,17 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "StarisUtils.generated.h"
+#include "Race.generated.h"
 
-class UEmpire;
-class UPlanet;
 /**
  * 
  */
 UCLASS()
-class STARIS_API UStarisUtils : public UObject
+class STARIS_API URace : public UObject
 {
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FString Title;
 };
