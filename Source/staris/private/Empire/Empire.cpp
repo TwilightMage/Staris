@@ -5,45 +5,24 @@
 
 #include "StarisStatics.h"
 #include "Game/StarisController.h"
+#include "Game/StarisGameInstance.h"
 #include "Game/StarisPlayerController.h"
+#include "UI/ContextMenu.h"
+#include "Universe/Planet.h"
+#include "Universe/Star.h"
 #include "Universe/System.h"
 
-void UEmpire::AssignController(IStarisController* Controller)
-{
-	if (!Controller) return;
-	if (OwningControllers.Contains(Controller)) return;
-	
-	OwningControllers.Add(Controller);
-	Controller->OnEmpireAssigned(this);
-	UE_LOG(LogStaris, Log, TEXT("Empire \"%s\" Assigned to %s %s"), *Title, Controller->IsPlayer() ? TEXT("player") : TEXT("bot"), *Controller->GetControllerName());
-}
-
-void UEmpire::RemoveController(IStarisController* Controller)
-{
-	if (!Controller) return;
-	
-	OwningControllers.Remove(Controller);
-	Controller->OnEmpireAssigned(nullptr);
-}
-
-bool UEmpire::TryAssignPlayer(AStarisPlayerController* Player)
+bool UEmpire::IsAssignedToPlayer() const
 {
 	for (auto Controller : OwningControllers)
 	{
 		if (Cast<APlayerController>(Controller))
 		{
-			return false;
+			return true;
 		}
 	}
 
-	for (int32 i = OwningControllers.Num() - 1; i >= 0; i--)
-	{
-		RemoveController(OwningControllers[i]);
-	}
-
-	AssignController(Player);
-
-	return true;
+	return false;
 }
 
 void UEmpire::TakeSystem(ASystem* System)
@@ -62,6 +41,52 @@ void UEmpire::TakeSystem(ASystem* System)
 	SystemChanged.Broadcast(System, true);
 
 	UE_LOG(LogStaris, Log, TEXT("System %s was taken by empire \"%s\""), *System->Id.ToString(), *Title);
+}
+
+TArray<UContextMenuItem*> UEmpire::CreateContextActions(IFocusable* HoveredFocusable, IFocusable* SelectedFocusable)
+{
+	TArray<UContextMenuItem*> Items;
+	
+	if (auto Star = Cast<UStar>(HoveredFocusable))
+	{
+		if (auto System = Star->GetSystem())
+		{
+			if (System->GetOwningEmpire() == this)
+			{
+				Items.Add(UContextMenuActionCPP::Create(this, NSLOCTEXT("Empire", "Rename System", "Rename System"), FText(), nullptr, nullptr));
+				Items.Add(UContextMenuActionCPP::Create(this, NSLOCTEXT("Empire", "Rename Star", "Rename Star"), FText(), nullptr, nullptr));
+			}
+			else
+			{
+				if (UStarisGameInstance::DebugToolsEnabled)
+				{
+					Items.Add(UContextMenuActionCPP::Create(this, NSLOCTEXT("Empire", "(DEBUG) Take System", "(DEBUG) Take System"), FText(), FContextMenuActionDelegate::CreateLambda([this, System]()
+					{
+						TakeSystem(System);
+					}), nullptr));
+				}
+			}
+		}
+	}
+
+	return Items;
+}
+
+void UEmpire::ClearControllerList()
+{
+	OwningControllers.Empty();
+}
+
+void UEmpire::ControllerAssigned(IStarisController* Controller)
+{
+	OwningControllers.Add(Controller);
+	
+	UE_LOG(LogStaris, Log, TEXT("Empire \"%s\" Assigned to %s %s"), *Title, Controller->IsPlayer() ? TEXT("player") : TEXT("bot"), *Controller->GetControllerName());
+}
+
+void UEmpire::ControllerRemoved(IStarisController* Controller)
+{
+	OwningControllers.Remove(Controller);
 }
 
 void UEmpire::SystemTaken(ASystem* System)

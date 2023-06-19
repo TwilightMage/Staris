@@ -48,7 +48,7 @@ public:
 			return Cast<ComponentType>(*ComponentFound);
 		}
 
-		if (!ComponentType::StaticClass()->IsChildOf(RecordComponentType))
+		if (RecordComponentType && !ComponentType::StaticClass()->IsChildOf(RecordComponentType))
 		{
 			return nullptr;
 		}

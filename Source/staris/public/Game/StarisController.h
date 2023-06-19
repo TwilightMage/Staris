@@ -20,14 +20,13 @@ class UStarisController : public UInterface
 class STARIS_API IStarisController
 {
 	GENERATED_BODY()
-
-	friend UEmpire;
-	
 public:
 	virtual UEmpire* GetEmpire() const = 0;
+	virtual void AssignEmpire(UEmpire* Empire) = 0;
 	virtual bool IsPlayer() const = 0;
 	virtual FString GetControllerName() const = 0;
 
 protected:
-	virtual void OnEmpireAssigned(UEmpire* Empire) {}
+	void NotifyControllerRemoved(UEmpire* Empire);
+	void NotifyControllerAssigned(UEmpire* Empire);
 };

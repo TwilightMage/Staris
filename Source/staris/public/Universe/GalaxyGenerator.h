@@ -21,11 +21,11 @@ class STARIS_API UGalaxyGenerator : public UObject
 	friend AStarisGameMode;
 
 public:
-	virtual void GenerateGalaxy(FGalaxyMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings) const {};
-	virtual void GenerateSystem(FSystemMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings) const {};
-	virtual void GenerateStar(FStarMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings) const {};
-	virtual void GeneratePlanet(FPlanetMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings) const {};
-	virtual void GeneratePlanetRegion(FPlanetRegionMetadata& Data, int32 SubSeed, AGalaxySettingsManager* Settings) const {};
+	virtual void GenerateGalaxy(FGalaxyMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings, UCompositeRecord* Context) const {};
+	virtual void GenerateSystem(FSystemMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings, UCompositeRecord* Context) const {};
+	virtual void GenerateStar(FStarMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings, UCompositeRecord* Context) const {};
+	virtual void GeneratePlanet(FPlanetMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings, UCompositeRecord* Context) const {};
+	virtual void GeneratePlanetRegion(FPlanetRegionMetadata& Data, int32 SubSeed, AGalaxySettingsManager* Settings, UCompositeRecord* Context) const {};
 
 	UPROPERTY()
 	UCompositeDatabase* StarTypeDatabase;

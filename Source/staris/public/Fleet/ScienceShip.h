@@ -7,7 +7,7 @@
 #include "ScienceShip.generated.h"
 
 
-UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+UCLASS(Blueprintable)
 class STARIS_API UScienceShip : public UShip
 {
 	GENERATED_BODY()

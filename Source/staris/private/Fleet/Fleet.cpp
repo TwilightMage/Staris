@@ -13,8 +13,10 @@ AFleet::AFleet()
 
 bool AFleet::AssignShip(UShip* Ship, bool Force)
 {
-	if (GetCurrentUsedControl() + Ship->ControlRequired <= ControlLimit || Force)
+	if (Force || GetCurrentUsedControl() + Ship->ControlRequired <= ControlLimit)
 	{
+		Ship->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepWorldTransform);
+		
 		Ships.Add(Ship);
 		return true;
 	}

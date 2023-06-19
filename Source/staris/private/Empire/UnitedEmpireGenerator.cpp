@@ -6,6 +6,9 @@
 #include "StarisStatics.h"
 #include "Empire/Colony.h"
 #include "Empire/Empire.h"
+#include "Fleet/BuildingShip.h"
+#include "Fleet/Fleet.h"
+#include "Fleet/ScienceShip.h"
 #include "Universe/Galaxy.h"
 #include "Universe/GalaxySettingsManager.h"
 #include "Universe/Planet.h"
@@ -48,6 +51,7 @@ UEmpire* UUnitedEmpireGenerator::Generate_Implementation(AGalaxy* Galaxy)
 		{
 			FRandomStream Random(VanillaGalaxySettings->Seed);
 
+			// Collect all available valid systems
 			TArray<ASystem*> FreeHabitableSystems;
 			for (const auto& System : Galaxy->GetSystems())
 			{
@@ -57,32 +61,24 @@ UEmpire* UUnitedEmpireGenerator::Generate_Implementation(AGalaxy* Galaxy)
 				}
 			}
 
+			// Check if there systems to take
 			if (FreeHabitableSystems.IsEmpty())
 			{
-				UE_LOG(LogStaris, Error, TEXT("Failed to populate empire \"%s\" due to the lack of unowned systems"), *EmpireTitle);
+				UE_LOG(LogStaris, Error, TEXT("Failed to populate empire \"%s\" due to the lack of available systems"), *EmpireTitle);
 				return nullptr;
 			}
-		
-			auto Empire = NewObject<UEmpire>();
+
+			// Setup Empire
+			const auto Empire = NewObject<UEmpire>();
 			Empire->Title = EmpireTitle;
 			Empire->FounderRaces = EmpireRaces;
-			
-			auto System = FreeHabitableSystems[Random.RandRange(0, FreeHabitableSystems.Num() - 1)];
-			System->Title = SystemTitle;
+
+			// Configure System
+			const auto System = FreeHabitableSystems[Random.RandRange(0, FreeHabitableSystems.Num() - 1)];
+			System->RenameSystem(SystemTitle, true);
 			Empire->TakeSystem(System);
 
-			if (System->GetStars().Num() == 1)
-			{
-				System->GetStars()[0]->Title = SystemTitle;
-			}
-			else
-			{
-				for (int j = 0; j < System->GetStars().Num(); j++)
-				{
-					System->GetStars()[j]->Title = SystemTitle + "-" + LetterNames[j];
-				}
-			}
-
+			// Configure Capital
 			Empire->Capital = GetRandomArrayItem(System->GetPlanets());
 			Empire->Capital->Title = CapitalTitle;
 			Empire->Capital->Colony = NewObject<UColony>();
@@ -91,6 +87,24 @@ UEmpire* UUnitedEmpireGenerator::Generate_Implementation(AGalaxy* Galaxy)
 				Empire->Capital->Colony->Population.Add(EmpireRaces[j], TotalPops / EmpireRaces.Num() * Random.FRandRange(0.9, 1.1));
 			}
 
+			// Configure Building Fleet
+			AFleet* BuildingFleet = Galaxy->GetWorld()->SpawnActor<AFleet>(Empire->Capital->GetComponentLocation() + FVector(200, 200, 0), FRotator::ZeroRotator);
+			for (int32 i = 0; i < 3; i++)
+			{
+				auto Ship = NewObject<UBuildingShip>(Empire, Galaxy->BuildingShipClass);
+				Ship->Setup(Empire);
+				BuildingFleet->AssignShip(Ship, true);
+			}
+
+			// Configure Science Fleet
+			AFleet* ScienceFleet = Galaxy->GetWorld()->SpawnActor<AFleet>(Empire->Capital->GetComponentLocation() + FVector(-200, 200, 0), FRotator::ZeroRotator);
+			for (int32 i = 0; i < 3; i++)
+			{
+				const auto Ship = NewObject<UScienceShip>(Empire, Galaxy->ScienceShipClass);
+				Ship->Setup(Empire);
+				ScienceFleet->AssignShip(Ship, true);
+			}
+			
 			return Empire;
 		}
 	}

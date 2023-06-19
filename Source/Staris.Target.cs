@@ -16,6 +16,6 @@ public class StarisTarget : TargetRules
 
 	private void RegisterModulesCreatedByRider()
 	{
-		ExtraModuleNames.AddRange(new string[] { "StarisEditor" });
+		ExtraModuleNames.AddRange(new string[] { });
 	}
 }

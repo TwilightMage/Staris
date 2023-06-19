@@ -32,9 +32,12 @@ struct FStarMetaData
 	inline const static FName TYPE_Yellow = "yellow";
 	inline const static FName TYPE_Blue = "blue";
 	inline const static FName TYPE_Black_Hole = "black_hole";
-
+	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FName Id;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FString Title;
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	UCompositeRecord* Type = nullptr;
@@ -95,6 +98,9 @@ struct FSystemMetaData
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FName Id;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	FString Title;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<FStarMetaData> Stars;

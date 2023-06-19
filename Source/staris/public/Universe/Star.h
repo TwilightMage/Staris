@@ -11,7 +11,7 @@
 #include "Star.generated.h"
 
 class ASystem;
-class UStarToolTip;
+class UGenericToolTip;
 
 UCLASS()
 class STARIS_API UStar : public UStaticMeshComponent, public ICelestialEntity, public IFocusable
@@ -30,9 +30,9 @@ public:
 	virtual void SetupToolTip(UToolTip* ToolTip) override;
 
 	FText GetTitle() const { return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(Title); }
-
 	const FName& GetId() const { return Id; }
-	UCompositeRecord* const& GetType() const { return TypeRecord; }
+	const UCompositeRecord* GetType() const { return TypeRecord; }
+	ASystem* GetSystem() const { return System.Get(); }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Title;
@@ -45,7 +45,7 @@ private:
 	UCompositeRecord* TypeRecord;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<UStarToolTip> ToolTipClass;
+	TSubclassOf<UGenericToolTip> ToolTipClass;
 
 	TWeakObjectPtr<ASystem> System;
 };

@@ -3,7 +3,12 @@
 
 #include "Game/StarisPlayerPawn.h"
 
+#include "StarisStatics.h"
 #include "Camera/CameraComponent.h"
+#include "Game/StarisPlayerController.h"
+#include "Universe/Galaxy.h"
+#include "Universe/Star.h"
+#include "Universe/System.h"
 
 
 AStarisPlayerPawn::AStarisPlayerPawn()
@@ -19,7 +24,7 @@ AStarisPlayerPawn::AStarisPlayerPawn()
 	
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>("Camera");
 	CameraComponent->SetupAttachment(CameraArm);
-	CameraComponent->SetRelativeLocation(FVector(-1000, 0, 0));
+	CameraComponent->SetRelativeLocation(FVector(-5000, 0, 0));
 }
 
 void AStarisPlayerPawn::BeginPlay()
@@ -32,14 +37,14 @@ void AStarisPlayerPawn::BeginPlay()
 	DesiredYaw = RootComponent->GetComponentRotation().Yaw;
 	DesiredPitch = CameraArm->GetComponentRotation().Pitch;
 
-	DesiredZoom = -CameraComponent->GetComponentLocation().X;
+	DesiredCamDist = -CameraComponent->GetComponentLocation().X;
 }
 
 void AStarisPlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	float MovementScale = FMath::Lerp(1.0f, 4.0f, (DesiredZoom - MinCamDist) / (MaxCamDist - MinCamDist));
+	float MovementScale = FMath::Lerp(1.0f, 20.0f, (DesiredCamDist - MinCamDist) / (MaxCamDist - MinCamDist));
 	DesiredLocation += (RootComponent->GetForwardVector() * Movement.X * MovementScale + RootComponent->GetRightVector() * Movement.Y * MovementScale) * DeltaTime * 2000;
 	DesiredLocation.Z = 0;
 	RootComponent->SetWorldLocation(FMath::Lerp(RootComponent->GetComponentLocation(), DesiredLocation, DeltaTime * 10));
@@ -48,15 +53,20 @@ void AStarisPlayerPawn::Tick(float DeltaTime)
 	RootComponent->SetRelativeRotation(FRotator(0, NewRotation.Yaw, 0));
 	CameraArm->SetRelativeRotation(FRotator(NewRotation.Pitch, 0, 0));
 
-	CameraComponent->SetRelativeLocation(FVector(FMath::Lerp(CameraComponent->GetRelativeLocation().X, -DesiredZoom, DeltaTime * 10), 0, 0));
+	CameraComponent->SetRelativeLocation(FVector(FMath::Lerp(CameraComponent->GetRelativeLocation().X, -DesiredCamDist, DeltaTime * 10), 0, 0));
 }
 
 void AStarisPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAction("RotateCamera", IE_Pressed, this, &AStarisPlayerPawn::RotateCamera_Pressed);
-	PlayerInputComponent->BindAction("RotateCamera", IE_Released, this, &AStarisPlayerPawn::RotateCamera_Released);
+	PlayerInputComponent->BindKey(FInputChord(FKey("MiddleMouseButton")), IE_Pressed, this, &AStarisPlayerPawn::RotateCamera_Pressed);
+	PlayerInputComponent->BindKey(FInputChord(FKey("MiddleMouseButton")), IE_Released, this, &AStarisPlayerPawn::RotateCamera_Released);
+
+	PlayerInputComponent->BindKey(FInputChord(FKey("LeftMouseButton")), IE_Pressed, this, &AStarisPlayerPawn::Click);
+	PlayerInputComponent->BindKey(FInputChord(FKey("RightMouseButton")), IE_Pressed, this, &AStarisPlayerPawn::OpenContextMenu);
+
+	PlayerInputComponent->BindAction("PauseGameTime", IE_Pressed, this, &AStarisPlayerPawn::PauseGameTime);
 	
 	PlayerInputComponent->BindAxis("MovementForward", this, &AStarisPlayerPawn::MovementForward);
 	PlayerInputComponent->BindAxis("MovementRight", this, &AStarisPlayerPawn::MovementRight);
@@ -90,6 +100,30 @@ void AStarisPlayerPawn::RotateCamera_Released()
 	bIsRotatingCamera = false;
 }
 
+void AStarisPlayerPawn::Click()
+{
+	if (auto StarisPlayerController = Cast<AStarisPlayerController>(GetController()))
+	{
+		StarisPlayerController->Click();
+	}
+}
+
+void AStarisPlayerPawn::OpenContextMenu()
+{
+	if (auto StarisPlayerController = Cast<AStarisPlayerController>(GetController()))
+	{
+		StarisPlayerController->OpenContextMenu();
+	}
+}
+
+void AStarisPlayerPawn::PauseGameTime()
+{
+	if (auto Galaxy = GetActorOfClass<AGalaxy>(this))
+	{
+		Galaxy->TogglePauseTime();
+	}
+}
+
 void AStarisPlayerPawn::MovementForward(float Axis)
 {
 	Movement.X = Axis;
@@ -111,6 +145,22 @@ void AStarisPlayerPawn::Mouse2D(FVector Vector)
 
 void AStarisPlayerPawn::CameraZoom(float Axis)
 {
-	DesiredZoom = FMath::Clamp(DesiredZoom - Axis * 300 * FMath::Lerp(1, 2, (DesiredZoom - MinCamDist) / (MaxCamDist - MinCamDist)), MinCamDist, MaxCamDist);
+	if (Axis == 0) return;
+	
+	float aspect = (DesiredCamDist - MinCamDist) / (MaxCamDist - MinCamDist);
+	
+	DesiredCamDist = FMath::Clamp(DesiredCamDist - Axis * 300 * FMath::Lerp(1, 10, aspect), MinCamDist, MaxCamDist);
+
+	float StarScale = FMath::Lerp(1.0f, 4.0f, FMath::Clamp(aspect * 2, 0, 1));
+
+	FVector Scale = FVector(StarScale);
+	auto Galaxy = GetActorOfClass<AGalaxy>(this);
+	for (auto System : Galaxy->GetSystems())
+	{
+		for (auto Star : System->GetStars())
+		{
+			Star->SetRelativeScale3D(Scale);
+		}
+	}
 }
 

@@ -16,7 +16,7 @@ public:
 	AStarisBotController();
 
 	virtual UEmpire* GetEmpire() const override;
-	virtual void OnEmpireAssigned(UEmpire* Empire) override;
+	virtual void AssignEmpire(UEmpire* Empire) override;
 
 	virtual bool IsPlayer() const override { return false; }
 	virtual FString GetControllerName() const override { return GetName(); }

@@ -36,6 +36,11 @@ public:
 private:
 	void RotateCamera_Pressed();
 	void RotateCamera_Released();
+
+	void Click();
+	void OpenContextMenu();
+
+	void PauseGameTime();
 	
 	void MovementForward(float Axis);
 	void MovementRight(float Axis);
@@ -49,8 +54,8 @@ private:
 	FVector DesiredLocation;
 	float DesiredPitch;
 	float DesiredYaw;
-	float DesiredZoom;
+	float DesiredCamDist;
 
 	float MinCamDist = 1000;
-	float MaxCamDist = 10000;
+	float MaxCamDist = 50000;
 };

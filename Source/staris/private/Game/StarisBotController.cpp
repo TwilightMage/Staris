@@ -108,7 +108,7 @@ UEmpire* AStarisBotController::GetEmpire() const
 	return OwnedEmpire;
 }
 
-void AStarisBotController::OnEmpireAssigned(UEmpire* Empire)
+void AStarisBotController::AssignEmpire(UEmpire* Empire)
 {
 	OwnedEmpire = Empire;
 }

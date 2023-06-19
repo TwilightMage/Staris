@@ -10,7 +10,7 @@
 #include "Planet.generated.h"
 
 class UColony;
-class UPlanetToolTip;
+class UGenericToolTip;
 class AGalaxy;
 class ASystem;
 class USceneComponent;
@@ -34,8 +34,8 @@ public:
 	virtual void SetupToolTip(UToolTip* ToolTip) override;
 
 	FText GetTitle() const { return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(Title); }
-	
 	const FName& GetId() const { return Id; }
+	ASystem* GetSystem() const { return System.Get(); }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UColony* Colony;
@@ -64,7 +64,7 @@ private:
 	int32 TemperatureNight;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<UPlanetToolTip> ToolTipClass;
+	TSubclassOf<UGenericToolTip> ToolTipClass;
 
 	TWeakObjectPtr<ASystem> System;
 };

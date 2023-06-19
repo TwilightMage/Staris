@@ -6,8 +6,10 @@
 #include "UObject/Interface.h"
 #include "Focusable.generated.h"
 
+class UContextMenu;
 class UToolTip;
-// This class does not need to be modified.
+class UContextMenuItem;
+
 UINTERFACE()
 class UFocusable : public UInterface
 {
@@ -24,4 +26,7 @@ class STARIS_API IFocusable
 public:
 	virtual UToolTip* CreateToolTip() = 0;
 	virtual void SetupToolTip(UToolTip* ToolTip) = 0;
+
+	virtual TArray<UContextMenuItem*> CreateContextActionsHovered(IFocusable* Selected) { return {}; }
+	virtual TArray<UContextMenuItem*> CreateContextActionsSelected(IFocusable* Hovered) { return {}; }
 };

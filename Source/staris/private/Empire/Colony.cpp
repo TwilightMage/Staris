@@ -3,6 +3,11 @@
 
 #include "Empire/Colony.h"
 
+TMap<UCompositeRecord*, int32> UColony::GetResourceBalance() const
+{
+	return {};
+}
+
 int32 UColony::getTotalPopulationAmount() const
 {
 	int32 Result = 0;

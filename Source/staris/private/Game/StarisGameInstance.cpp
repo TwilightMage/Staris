@@ -3,7 +3,10 @@
 
 #include "Game/StarisGameInstance.h"
 
-#include "..\..\public\Universe\CompositeDatabase.h"
+#include "Empire/ResourceTypeProperties.h"
+#include "Universe/CompositeDatabase.h"
+#include "Universe/LetterNames.h"
+#include "Universe/StarNames.h"
 #include "Universe/StarTypeProperties.h"
 
 void UStarisGameInstance::InitAssets_Implementation ()
@@ -14,12 +17,24 @@ void UStarisGameInstance::InitAssets_Implementation ()
 	//FStarMetaData::Collection.Add(FStarMetaData::TYPE_Black_Star, UJsonUtils::StringToJson("{\"color\": {\"R\": 0, \"G\": 0, \"B\": 0, \"A\": 1}}"));
 }
 
+UStarisGameInstance::UStarisGameInstance()
+	: Super()
+{
+	RegisterStarNames();
+	RegisterLetterNames();
+
+	auto DebugToolsConsoleVar = IConsoleManager::Get().RegisterConsoleVariableRef(TEXT("Staris.DebugTools"), DebugToolsEnabled, TEXT("Enable debug tools"), ECVF_Cheat);
+}
+
 void UStarisGameInstance::Init()
 {
 	Super::Init();
 
-	StarTypeDatabase = NewObject<UCompositeDatabase>();
+	StarTypeDatabase = NewObject<UCompositeDatabase>(this);
 	StarTypeDatabase->RecordComponentType = UStarTypeProperties::StaticClass();
+
+	ResourceTypeDatabase = NewObject<UCompositeDatabase>(this);
+	ResourceTypeDatabase->RecordComponentType = UResourceTypeProperties::StaticClass();
 
 	InitAssets();
 }

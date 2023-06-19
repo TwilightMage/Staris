@@ -32,8 +32,9 @@ FString AStarisGameMode::InitNewPlayer(APlayerController* NewPlayerController, c
 	{
 		for (auto& Empire : Empires)
 		{
-			if (Empire->TryAssignPlayer(Player))
+			if (!Empire->IsAssignedToPlayer())
 			{
+				Player->AssignEmpire(Empire);
 				break;
 			}
 		}

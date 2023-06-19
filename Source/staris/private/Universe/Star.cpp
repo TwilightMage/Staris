@@ -4,7 +4,9 @@
 #include "Universe/Star.h"
 
 #include "StarisStatics.h"
-#include "UI/StarToolTip.h"
+#include "Empire/Empire.h"
+#include "Game/StarisGameInstance.h"
+#include "UI/GenericToolTip.h"
 #include "Universe/CompositeDatabase.h"
 #include "Universe/System.h"
 #include "Universe/VanillaStarTypeProperties.h"
@@ -16,15 +18,27 @@ UStar::UStar()
 
 UToolTip* UStar::CreateToolTip()
 {
-	return NewObject<UStarToolTip>(this, ToolTipClass);
+	return NewObject<UGenericToolTip>(this, ToolTipClass);
 }
 
 void UStar::SetupToolTip(UToolTip* ToolTip)
 {
-	Cast<UStarToolTip>(ToolTip)->SetupToolTip(
-		GetTitle(),
-		System->GetTitle(),
-		FText::FromString(TypeRecord->GetOrCreateComponent<UVanillaStarTypeProperties>()->Title));
+	if (auto GenericToolTip = Cast<UGenericToolTip>(ToolTip))
+	{
+		UEmpire* Empire = System->GetOwningEmpire();
+
+		if (UStarisGameInstance::DebugToolsEnabled)
+		{
+			GenericToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Star", "StarToolTip_Star", "Star: {0} ({1})")), GetTitle(), FText::FromName(GetId())));
+		}
+		else
+		{
+			GenericToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Star", "StarToolTip_Star", "Star: {0}")), GetTitle()));
+		}
+		
+		GenericToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Star", "StarToolTip_System", "System: {0} ({1})")), System->GetTitle(), FText::FromString(Empire ? Empire->Title : "Unowned")));
+		GenericToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Star", "StarToolTip_Class", "Class: {0}")), FText::FromString(TypeRecord->GetOrCreateComponent<UVanillaStarTypeProperties>()->Title)));
+	}
 }
 
 void UStar::ApplyPattern_Implementation(const FStarMetaData& Data)
@@ -35,6 +49,7 @@ void UStar::ApplyPattern_Implementation(const FStarMetaData& Data)
 		return;
 	}
 
+	Title = Data.Title;
 	Id = Data.Id;
 	TypeRecord = Data.Type;
 	Rename(*FString::Printf(TEXT("Star_%s"), *Id.ToString()));

@@ -4,6 +4,7 @@
 
 #include "StarisStatics.h"
 #include "Universe/Galaxy.h"
+#include "Universe/LetterNames.h"
 #include "Universe/Planet.h"
 #include "Universe/Star.h"
 
@@ -18,6 +19,19 @@ UEmpire* ASystem::GetOwningEmpire()
 	return OwningEmpire.Get();
 }
 
+void ASystem::RenameSystem(const FString& NewName, bool PropagateToChildren)
+{
+	Title = NewName;
+
+	if (PropagateToChildren)
+	{
+		for (int32 i = 0; i < Stars.Num(); i++)
+		{
+			Stars[i]->Title = NewName + "-" + GetLetterName(i);
+		}
+	}
+}
+
 void ASystem::ApplyPattern_Implementation(const FSystemMetaData& Data)
 {
 	if (!Id.IsNone())
@@ -26,9 +40,11 @@ void ASystem::ApplyPattern_Implementation(const FSystemMetaData& Data)
 		return;
 	}
 
+	Title = Data.Title;
 	Id = Data.Id;
+#if WITH_EDITOR
 	SetActorLabel(FString::Printf(TEXT("System_%s"), *Id.ToString()));
-
+#endif
 	SetActorRelativeLocation(Data.Location);
 	
 	if (auto Galaxy = GetGalaxy())

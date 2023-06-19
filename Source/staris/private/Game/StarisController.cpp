@@ -3,5 +3,15 @@
 
 #include "Game/StarisController.h"
 
+#include "Empire/Empire.h"
 
-// Add default functionality here for any IStarisController functions that are not pure virtual.
+
+void IStarisController::NotifyControllerRemoved(UEmpire* Empire)
+{
+	Empire->ControllerAssigned(this);
+}
+
+void IStarisController::NotifyControllerAssigned(UEmpire* Empire)
+{
+	Empire->ControllerRemoved(this);
+}

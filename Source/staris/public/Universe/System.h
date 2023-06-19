@@ -33,6 +33,8 @@ public:
 
 	FText GetTitle() const { return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(Title); }
 
+	void RenameSystem(const FString& NewName, bool PropagateToChildren);
+
 	const FName& GetId() const { return Id; }
 	const TArray<UStar*>& GetStars() const { return Stars; }
 	const TArray<UPlanet*>& GetPlanets() const { return Planets; }

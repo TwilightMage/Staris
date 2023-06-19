@@ -6,6 +6,7 @@
 #include "Game/StarisGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Universe/CelestialEntity.h"
+#include "Universe/CompositeDatabase.h"
 #include "Universe/GalaxySettingsManager.h"
 #include "Universe/System.h"
 #include "Universe/VanillaGalaxyGenerator.h"
@@ -39,8 +40,10 @@ void AGalaxy::ApplyPattern(const FGalaxyMetaData& Data)
 	}
 	
 	Id = Data.Id;
+#if WITH_EDITOR
 	SetActorLabel(FString::Printf(TEXT("Galaxy_%s"), *Id.ToString()));
-		
+#endif
+
 	Systems.Reserve(Data.Systems.Num());
 	for (auto& System : Data.Systems)
 	{
@@ -86,13 +89,21 @@ void AGalaxy::PauseTime(bool Pause)
 
 void AGalaxy::TogglePauseTime()
 {
-	if (GetWorld()->GetTimerManager().IsTimerPaused(DayTickHandle))
+	auto& TimerManager = GetWorld()->GetTimerManager();
+	if (TimerManager.TimerExists(DayTickHandle))
 	{
-		GetWorld()->GetTimerManager().UnPauseTimer(DayTickHandle);
+		if (TimerManager.IsTimerPaused(DayTickHandle))
+		{
+			TimerManager.UnPauseTimer(DayTickHandle);
+		}
+		else
+		{
+			TimerManager.PauseTimer(DayTickHandle);
+		}
 	}
 	else
 	{
-		GetWorld()->GetTimerManager().PauseTimer(DayTickHandle);
+		SetTimeScale(1);
 	}
 }
 
@@ -133,7 +144,7 @@ void AGalaxy::DayPassed()
 		YearUpdateCelestialEntities.Remove(Entity);
 	}
 	
-	GEngine->AddOnScreenDebugMessage(0, 60, FColor::Blue, FString::Printf(TEXT("Day %i passed"), DaysCounter));
+	GEngine->AddOnScreenDebugMessage(0, 60, FColor::White, FString::Printf(TEXT("Day %i passed"), DaysCounter));
 	
 	for (int i = DayUpdateCelestialEntities.Num() - 1; i >= 0; --i)
 	{
@@ -146,7 +157,7 @@ void AGalaxy::DayPassed()
 		{
 			static int MonthCounter = 0;
             		
-            GEngine->AddOnScreenDebugMessage(1, 60, FColor::Blue, FString::Printf(TEXT("Month %i passed"), DaysCounter / 30));
+            GEngine->AddOnScreenDebugMessage(1, 60, FColor::White, FString::Printf(TEXT("Month %i passed"), DaysCounter / 30));
         
             for (int i = DayUpdateCelestialEntities.Num() - 1; i >= 0; --i)
             {
@@ -156,7 +167,7 @@ void AGalaxy::DayPassed()
 
 		if (DaysCounter % (30 * 12) == 0)
 		{
-			GEngine->AddOnScreenDebugMessage(2, 60, FColor::Blue, FString::Printf(TEXT("Year %i passed"), DaysCounter / (30 * 12)));
+			GEngine->AddOnScreenDebugMessage(2, 60, FColor::White, FString::Printf(TEXT("Year %i passed"), DaysCounter / (30 * 12)));
 		}
 	}
 
@@ -173,7 +184,7 @@ void AGalaxy::Generate()
 			generator->StarTypeDatabase = StarisGameInstance->GetStarTypeDatabase();
 		
 			FGalaxyMetaData data;
-			generator->GenerateGalaxy(data, 1, Settings);
+			generator->GenerateGalaxy(data, 1, Settings, NewObject<UCompositeRecord>());
 
 			ApplyPattern(data);
 		}

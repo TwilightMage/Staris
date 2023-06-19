@@ -20,7 +20,7 @@
 		},
 		{
 			"Name": "LovelyJSON",
-			"Enabled": true
+			"Enabled": false
 		}
 	]
 }

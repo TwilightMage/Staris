@@ -5,7 +5,9 @@
 
 #include "StarisStatics.h"
 #include "Empire/Colony.h"
-#include "UI/PlanetToolTip.h"
+#include "Empire/Empire.h"
+#include "Game/StarisGameInstance.h"
+#include "UI/GenericToolTip.h"
 #include "Universe/System.h"
 
 const int32 OrbitPositionsCount = 365 * 10;
@@ -33,18 +35,33 @@ void UPlanet::OnDayPassed(int32 Day)
 
 UToolTip* UPlanet::CreateToolTip()
 {
-	return NewObject<UPlanetToolTip>(this, ToolTipClass);
+	return NewObject<UGenericToolTip>(this, ToolTipClass);
 }
 
 void UPlanet::SetupToolTip(UToolTip* ToolTip)
 {
-	Cast<UPlanetToolTip>(ToolTip)->SetupToolTip(
-		GetTitle(),
-		System->GetTitle(),
-		Colony ? Colony->getTotalPopulationAmount() : 0,
-		FText::FromName(Biome),
-		TemperatureDay,
-		TemperatureNight);
+	if (auto GenericToolTip = Cast<UGenericToolTip>(ToolTip))
+	{
+		UEmpire* Empire = System->GetOwningEmpire();
+
+		if (UStarisGameInstance::DebugToolsEnabled)
+		{
+			GenericToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Planet", "PlanetToolTip_Star", "Planet: {0} ({1})")), GetTitle(), FText::FromName(GetId())));
+		}
+		else
+		{
+			GenericToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Planet", "PlanetToolTip_Star", "Planet: {0}")), GetTitle()));
+		}
+		
+		GenericToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Planet", "PlanetToolTip_System", "System: {0} ({1})")), System->GetTitle(), FText::FromString(Empire ? Empire->Title : "Unowned")));
+		GenericToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Planet", "PlanetToolTip_TemperatureDay", "Day Temperature: {0}°C")), TemperatureDay));
+		GenericToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Planet", "PlanetToolTip_TemperatureNight", "Night Temperature: {0}°C")), TemperatureNight));
+
+		if (Colony)
+		{
+			GenericToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Planet", "PlanetToolTip_Population", "Population: {0}")), Colony->getTotalPopulationAmount()));
+		}
+	}
 }
 
 void UPlanet::OnInitCelestialEntity()

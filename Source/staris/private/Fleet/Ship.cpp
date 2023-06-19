@@ -5,5 +5,11 @@
 
 UShip::UShip()
 {
+	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>("Mesh");
+	StaticMesh->SetupAttachment(this);
+}
 
+void UShip::Setup_Implementation(UEmpire* Empire)
+{
+	
 }

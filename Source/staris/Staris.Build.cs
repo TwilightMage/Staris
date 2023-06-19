@@ -16,7 +16,8 @@ public class Staris : ModuleRules
 			"InputCore", 
 			"Json", 
 			"LovelyJson",
-			"UMG"
+			"UMG",
+			"Slate"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

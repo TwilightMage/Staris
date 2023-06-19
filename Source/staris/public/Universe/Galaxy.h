@@ -8,6 +8,8 @@
 
 #include "Galaxy.generated.h"
 
+class UBuildingShip;
+class UScienceShip;
 class AStarisGameMode;
 class ASystem;
 class ICelestialEntity;
@@ -61,6 +63,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UPlanet> PlanetClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UScienceShip> ScienceShipClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TSubclassOf<UBuildingShip> BuildingShipClass;
 
 	UPROPERTY(BlueprintReadWrite)
 	int64 DaysCounter;

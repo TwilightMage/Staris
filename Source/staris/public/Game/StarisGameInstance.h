@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameStage.h"
 #include "Engine/GameInstance.h"
+
 #include "StarisGameInstance.generated.h"
 
 class UCompositeDatabase;
@@ -20,6 +21,7 @@ class STARIS_API UStarisGameInstance : public UGameInstance
 	GENERATED_BODY()
 
 public:
+	UStarisGameInstance();
 	virtual void Init() override;
 	
 	UFUNCTION(BlueprintNativeEvent)
@@ -31,7 +33,17 @@ public:
 	UFUNCTION(BlueprintPure)
 	UCompositeDatabase* GetStarTypeDatabase() const { return StarTypeDatabase; }
 
+	UFUNCTION(BlueprintPure)
+	UCompositeDatabase* GetResourceTypeDatabase() const { return ResourceTypeDatabase; }
+
 	FStarisGameStageChanged GameStageChanged;
+	
+	inline static bool DebugToolsEnabled =
+#if UE_BUILD_SHIPPING
+			false;
+#else
+			true;
+#endif
 
 private:
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
@@ -39,4 +51,7 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	UCompositeDatabase* StarTypeDatabase;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	UCompositeDatabase* ResourceTypeDatabase;
 };

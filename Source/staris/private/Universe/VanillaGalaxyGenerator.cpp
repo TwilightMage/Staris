@@ -3,23 +3,32 @@
 
 #include "Universe/VanillaGalaxyGenerator.h"
 
+#include "Internationalization/StringTableCore.h"
+#include "Internationalization/StringTableRegistry.h"
 #include "Universe/CompositeDatabase.h"
 #include "Universe/GalaxySettingsManager.h"
+#include "Universe/LetterNames.h"
+#include "Universe/VanillaGalaxyGeneratorContext.h"
 #include "Universe/VanillaGalaxySettings.h"
 
-FName GenerateName(int32 Seed)
+FName GenerateId(int32 Seed, TSet<FName>& UsedIDs)
 {
 	const static FString CharSet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 	FRandomStream Random(Seed);
-
 	FString Result;
-
-	for (int32 i = 0; i < 6; i++)
+	
+	do
 	{
-		Result += CharSet[Random.RandRange(0, CharSet.Len() - 1)];
+		Result = "";
+		for (int32 i = 0; i < 6; i++)
+		{
+			Result += CharSet[Random.RandRange(0, CharSet.Len() - 1)];
+		}	
 	}
+	while (UsedIDs.Contains(FName(Result)));
 
+	UsedIDs.Add(FName(Result));
 	return FName(Result);
 }
 
@@ -29,37 +38,60 @@ T GetRandomSetItem(const TSet<T>& Container, FRandomStream& Random) { return Con
 template<typename T>
 T GetRandomArrayItem(const TArray<T>& Container, FRandomStream& Random) { return Container[Random.RandRange(0, Container.Num() - 1)]; }
 
-void UVanillaGalaxyGenerator::GenerateGalaxy(FGalaxyMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager) const
+void UVanillaGalaxyGenerator::GenerateGalaxy(FGalaxyMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
 {
 	if (auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
 	{
+		auto VanillaContext = Context->GetOrCreateComponent<UVanillaGalaxyGeneratorContext>();
+		VanillaContext->CurrentGalaxy = &Data;
+		
+		FStringTableConstPtr StringTable = FStringTableRegistry::Get().FindStringTable("StarNames");
+		if (StringTable.IsValid())
+		{
+			StringTable->EnumerateSourceStrings([&](const FString& InKey, const FString& InSourceString) -> bool
+			{
+				VanillaContext->AvailableStarNames.Add(InKey);
+				return true;
+			});
+		}
+		
 		auto Seed = Settings->Seed * SubSeed;
 		
 		FRandomStream Random(Seed);
 
-		Data.Id = GenerateName(Seed);
+		Data.Id = GenerateId(Seed, VanillaContext->UsedIDs);
 		Data.Systems.SetNum(Settings->SystemCount);
 
 		for (auto& System : Data.Systems)
 		{
-			GenerateSystem(System, Random.FRand() * MAX_int32, SettingsManager);
+			GenerateSystem(System, Random.FRand() * MAX_int32, SettingsManager, Context);
 		}
 	}
 }
 
-void UVanillaGalaxyGenerator::GenerateSystem(FSystemMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager) const
+void UVanillaGalaxyGenerator::GenerateSystem(FSystemMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
 {
 	if (auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
 	{
+		auto VanillaContext = Context->GetOrCreateComponent<UVanillaGalaxyGeneratorContext>();
+		VanillaContext->CurrentSystem = &Data;
+		
 		auto Seed = Settings->Seed * SubSeed;
 		
 		FRandomStream Random(Seed);
 
-		bool BlackHole = Random.FRand() < 0.1;
+		VanillaContext->IsBlackHole = Random.FRand() < 0.1;
 
-		Data.Id = GenerateName(Seed);
+		if (!VanillaContext->AvailableStarNames.IsEmpty())
+		{
+			auto UsedStarName = GetRandomArrayItem(VanillaContext->AvailableStarNames, Random);
+			VanillaContext->AvailableStarNames.Remove(UsedStarName);
+			Data.Title = FText::FromStringTable("StarNames", UsedStarName, EStringTableLoadingPolicy::FindOrFullyLoad).ToString();
+		}
+
+		Data.Id = GenerateId(Seed, VanillaContext->UsedIDs);
 		Data.Stars.SetNum(1);
-		Data.Planets.SetNum(BlackHole ? 0 : Random.RandRange(3, 7));
+		Data.Planets.SetNum(VanillaContext->IsBlackHole ? 0 : Random.RandRange(3, 7));
 
 		float Angle = Random.FRand();
 		float Dist = Random.FRand();
@@ -67,19 +99,19 @@ void UVanillaGalaxyGenerator::GenerateSystem(FSystemMetaData& Data, int32 SubSee
 		Dist += FMath::Cos(Dist * 3.14) * 0.1;
 
 		Data.Location = FVector(FMath::Sin(3.14 * 2 * Angle) * 50000 * Dist, FMath::Cos(3.14 * 2 * Angle) * 50000 * Dist, Random.FRand() * 1000 - 500) * 5;
-
-		if (BlackHole)
-		{
-			Data.Stars[0].Type = StarTypeDatabase->GetOrCreateRecord(FStarMetaData::TYPE_Black_Hole);
-		}
+		
+		VanillaContext->CurrentStarIndex = 0;
 		for (auto& Star : Data.Stars)
 		{
-			GenerateStar(Star, Random.FRand() * MAX_int32, SettingsManager);
+			GenerateStar(Star, Random.FRand() * MAX_int32, SettingsManager, Context);
+			VanillaContext->CurrentStarIndex++;
 		}
-		
+
+		VanillaContext->CurrentPlanetIndex = 0;
 		for (auto& Planet : Data.Planets)
 		{
-			GeneratePlanet(Planet, Random.FRand() * MAX_int32, SettingsManager);
+			GeneratePlanet(Planet, Random.FRand() * MAX_int32, SettingsManager, Context);
+			VanillaContext->CurrentPlanetIndex++;
 		}
 
 		if (!Data.Planets.IsEmpty())
@@ -119,10 +151,13 @@ void UVanillaGalaxyGenerator::GenerateSystem(FSystemMetaData& Data, int32 SubSee
 	}
 }
 
-void UVanillaGalaxyGenerator::GenerateStar(FStarMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager) const
+void UVanillaGalaxyGenerator::GenerateStar(FStarMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
 {
 	if (auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
 	{
+		auto VanillaContext = Context->GetOrCreateComponent<UVanillaGalaxyGeneratorContext>();
+		VanillaContext->CurrentStar = &Data;
+		
 		auto Seed = Settings->Seed * SubSeed;
 		
 		const static TSet<FName> StarTypes = {
@@ -133,22 +168,37 @@ void UVanillaGalaxyGenerator::GenerateStar(FStarMetaData& Data, int32 SubSeed, A
 
 		FRandomStream Random(Seed);
 
-		Data.Id = GenerateName(Seed);
-		
-		if (!Data.Type) Data.Type = StarTypeDatabase->GetOrCreateRecord(GetRandomSetItem(StarTypes, Random));
+		if (VanillaContext->CurrentSystem)
+		{
+			if (VanillaContext->CurrentSystem->Stars.Num() > 1 || true)
+			{
+				Data.Title = VanillaContext->CurrentSystem->Title + "-" + GetLetterName(VanillaContext->CurrentStarIndex);
+			}
+			else
+			{
+				Data.Title = VanillaContext->CurrentSystem->Title;
+			}
+		}
+		Data.Id = GenerateId(Seed, VanillaContext->UsedIDs);
+
+		if (VanillaContext->IsBlackHole) Data.Type = StarTypeDatabase->GetOrCreateRecord(FStarMetaData::TYPE_Black_Hole);
+		else Data.Type = StarTypeDatabase->GetOrCreateRecord(GetRandomSetItem(StarTypes, Random));
 
 		Data.Location = FVector::Zero();
 		Data.Scale = Random.FRandRange(0.5, 1.0);
 	}
 }
 
-void UVanillaGalaxyGenerator::GeneratePlanet(FPlanetMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager) const
+void UVanillaGalaxyGenerator::GeneratePlanet(FPlanetMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
 {
 	const float OrbitRange = 2000;
 	const float OrbitOffset = 300;
 	
 	if (auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
 	{
+		auto VanillaContext = Context->GetOrCreateComponent<UVanillaGalaxyGeneratorContext>();
+		VanillaContext->CurrentPlanet = &Data;
+		
 		auto Seed = Settings->Seed * SubSeed;
 		
 		const static TSet<FName> PlanetBiomes = {
@@ -159,7 +209,7 @@ void UVanillaGalaxyGenerator::GeneratePlanet(FPlanetMetaData& Data, int32 SubSee
 
 		FRandomStream Random(Seed);
 
-		Data.Id = GenerateName(Seed);
+		Data.Id = GenerateId(Seed, VanillaContext->UsedIDs);
 		Data.Biome = GetRandomSetItem(PlanetBiomes, Random);
 		Data.Regions.SetNum(Random.RandRange(10, 20));
 		Data.Scale = Random.FRandRange(0.5, 1.0);
@@ -177,12 +227,12 @@ void UVanillaGalaxyGenerator::GeneratePlanet(FPlanetMetaData& Data, int32 SubSee
 
 		for (auto& Region : Data.Regions)
 		{
-			GeneratePlanetRegion(Region, Random.FRand() * MAX_int32, SettingsManager);
+			GeneratePlanetRegion(Region, Random.FRand() * MAX_int32, SettingsManager, Context);
 		}
 	}
 }
 
-void UVanillaGalaxyGenerator::GeneratePlanetRegion(FPlanetRegionMetadata& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager) const
+void UVanillaGalaxyGenerator::GeneratePlanetRegion(FPlanetRegionMetadata& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
 {
 	if (auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
 	{
