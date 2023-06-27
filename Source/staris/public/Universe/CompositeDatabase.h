@@ -13,7 +13,7 @@ class UCompositeRecordComponent : public UObject
 	GENERATED_BODY()
 };
 
-UCLASS()
+UCLASS(BlueprintType)
 class UCompositeRecord : public UObject
 {
 	GENERATED_BODY()
@@ -87,7 +87,7 @@ private:
 	TMap<TSubclassOf<UCompositeRecordComponent>, UCompositeRecordComponent*> Components;
 };
 
-UCLASS()
+UCLASS(BlueprintType)
 class UCompositeDatabase : public UObject
 {
 	GENERATED_BODY()
@@ -116,6 +116,8 @@ public:
 
 		return Record;
 	}
+
+	const TMap<FName, UCompositeRecord*>& GetAllRecords() const { return Records; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<UCompositeRecordComponent> RecordComponentType;

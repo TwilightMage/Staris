@@ -72,6 +72,16 @@ public:
 	FContextMenuActionEnabledDelegate EnabledDelegate;
 };
 
+UCLASS(BlueprintType)
+class UContextMenuSeparator : public UContextMenuItem
+{
+	GENERATED_BODY()
+
+public:
+	UFUNCTION(BlueprintCallable)
+	static void AddSeparatorIfNeeded(TArray<UContextMenuItem*>& ItemSet);
+};
+
 //UCLASS()
 //class UContextMenuCategory : public UContextMenuItem
 //{
@@ -90,7 +100,4 @@ class STARIS_API UContextMenu : public UUserWidget
 public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void AddItem(UContextMenuItem* Item);
-
-	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
-	void AddSeparator();
 };

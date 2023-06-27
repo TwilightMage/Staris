@@ -98,9 +98,7 @@ AStarisBotController::AStarisBotController()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	static int i = 12345;
-	BotName = GetRandomArrayItem(BotNameList, i);
-	i *= 2;
+	BotName = GetRandomArrayItem(BotNameList);
 }
 
 UEmpire* AStarisBotController::GetEmpire() const

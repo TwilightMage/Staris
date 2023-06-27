@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="200"
+   height="200"
+   viewBox="0 0 52.916665 52.916667"
+   version="1.1"
+   id="svg8057"
+   inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
+   sodipodi:docname="PlanetScheme.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview8059"
+     pagecolor="#000000"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="true"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     showborder="true"
+     borderlayer="true"
+     inkscape:zoom="5.7558492"
+     inkscape:cx="82.264143"
+     inkscape:cy="76.183372"
+     inkscape:window-width="1350"
+     inkscape:window-height="1040"
+     inkscape:window-x="16"
+     inkscape:window-y="28"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer3" />
+  <defs
+     id="defs8054" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     style="display:inline">
+    <circle
+       style="fill:none;stroke:#ffffff;stroke-width:0.264583;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="Atmosphere_Outline"
+       cy="26.458334"
+       cx="26.458334"
+       r="26.326042" />
+    <ellipse
+       style="fill:none;stroke:#ffffff;stroke-width:0.264583;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="Layer_0_Outline"
+       cx="26.45833"
+       cy="26.458334"
+       rx="24.173126"
+       ry="24.173382" />
+    <ellipse
+       style="fill:none;stroke:#ffffff;stroke-width:0.264583;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="Layer_1_Outline"
+       cx="26.45833"
+       cy="26.458334"
+       rx="17.709091"
+       ry="17.709085" />
+    <ellipse
+       style="fill:none;stroke:#ffffff;stroke-width:0.26458333;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="Layer_2_Outline"
+       cx="26.458334"
+       cy="26.458334"
+       rx="10.553965"
+       ry="10.553988" />
+    <ellipse
+       style="fill:none;stroke:#ffffff;stroke-width:0.264583;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="Core_Outline"
+       cx="26.458334"
+       cy="26.458334"
+       rx="1.8975917"
+       ry="1.8974786" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="Layer 2">
+    <circle
+       style="fill:none;stroke:#ffffff;stroke-width:1.90156042;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="Atmosphere"
+       cx="26.458332"
+       cy="26.458332"
+       r="25.249453" />
+    <circle
+       style="fill:none;stroke:#ffffff;stroke-width:6.47726458;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="Layer_0"
+       cx="26.45833"
+       cy="26.458332"
+       r="20.941109" />
+    <circle
+       style="fill:none;stroke:#ffffff;stroke-width:7.16836;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="Layer_1"
+       cx="26.45833"
+       cy="26.458332"
+       r="14.131528" />
+    <circle
+       style="fill:none;stroke:#ffffff;stroke-width:8.6696;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="Layer_2"
+       cx="26.45833"
+       cy="26.458332"
+       r="6.2257781" />
+    <circle
+       style="fill:none;stroke:#ffffff;stroke-width:1.91082;stroke-linecap:butt;stroke-linejoin:bevel;stroke-dasharray:none;stroke-opacity:1"
+       id="Core"
+       cx="26.45833"
+       cy="26.458332"
+       r="0.94879586" />
+  </g>
+</svg>

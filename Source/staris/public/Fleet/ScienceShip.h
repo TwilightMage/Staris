@@ -14,4 +14,10 @@ class STARIS_API UScienceShip : public UShip
 
 public:
 	UScienceShip();
+	
+	virtual FText GetClassTitle() const override;
+
+	virtual bool CanExecuteOrder(UFleetOrder* Order) const override;
+
+	virtual bool FullFleetShip() const override;
 };

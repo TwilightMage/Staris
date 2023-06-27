@@ -10,15 +10,16 @@
 
 #include "Star.generated.h"
 
-class ASystem;
-class UGenericToolTip;
+class UMeshInstanceRef;
+class USystem;
+class UToolTip;
 
-UCLASS()
-class STARIS_API UStar : public UStaticMeshComponent, public ICelestialEntity, public IFocusable
+UCLASS(BlueprintType)
+class STARIS_API UStar : public UObject, public ICelestialEntity, public IFocusable
 {
 	GENERATED_BODY()
 
-	friend ASystem;
+	friend USystem;
 
 public:
 	UStar();
@@ -26,13 +27,20 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void ApplyPattern(const FStarMetaData& Data);
 
-	virtual UToolTip* CreateToolTip() override;
 	virtual void SetupToolTip(UToolTip* ToolTip) override;
 
-	FText GetTitle() const { return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(Title); }
+	virtual TArray<UContextMenuItem*> CreateContextActionsHovered(IFocusable* Selected) override;
+
+	UFUNCTION(BlueprintPure)
+	FText GetTitle() const;
+
 	const FName& GetId() const { return Id; }
+	int32 GetSeed() const { return Seed; }
+	const FVector& GetLocation() const { return Location; }
 	const UCompositeRecord* GetType() const { return TypeRecord; }
-	ASystem* GetSystem() const { return System.Get(); }
+
+	UFUNCTION(BlueprintPure)
+	USystem* GetSystem() const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Title;
@@ -42,10 +50,17 @@ private:
 	FName Id;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	int32 Seed;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	UMeshInstanceRef* MeshInstance;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	FVector Location;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	UCompositeRecord* TypeRecord;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<UGenericToolTip> ToolTipClass;
-
-	TWeakObjectPtr<ASystem> System;
+	TSubclassOf<UToolTip> ToolTipClass;
 };

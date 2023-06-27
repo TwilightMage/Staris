@@ -21,6 +21,10 @@
 		{
 			"Name": "LovelyJSON",
 			"Enabled": false
+		},
+		{
+			"Name": "JsonBlueprintUtilities",
+			"Enabled": true
 		}
 	]
 }

@@ -17,7 +17,11 @@ public class Staris : ModuleRules
 			"Json", 
 			"LovelyJson",
 			"UMG",
-			"Slate"
+			"Slate",
+			"SlateCore",
+			"DesktopPlatform",
+			"HTTP",
+			"JsonUtilities"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

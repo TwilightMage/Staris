@@ -31,10 +31,16 @@ public:
 	bool SwitchGameStage(EGameStage NewGameStage);
 
 	UFUNCTION(BlueprintPure)
+	static FString MakeUrl(const TMap<FString, FString>& Map);
+
+	UFUNCTION(BlueprintPure)
 	UCompositeDatabase* GetStarTypeDatabase() const { return StarTypeDatabase; }
 
 	UFUNCTION(BlueprintPure)
 	UCompositeDatabase* GetResourceTypeDatabase() const { return ResourceTypeDatabase; }
+
+	UFUNCTION(BlueprintPure)
+	UCompositeDatabase* GetBuildingTypeDatabase() const { return BuildingTypeDatabase; }
 
 	FStarisGameStageChanged GameStageChanged;
 	
@@ -54,4 +60,7 @@ private:
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	UCompositeDatabase* ResourceTypeDatabase;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	UCompositeDatabase* BuildingTypeDatabase;
 };

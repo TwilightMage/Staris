@@ -7,4 +7,7 @@ template<typename T>
 T GetRandomArrayItem(const TArray<T>& Array, int32 Seed = MAX_int32) { return Array[Seed % Array.Num()]; }
 
 template<typename T>
-T* GetActorOfClass(UObject* WorldContext) { return Cast<T>(UGameplayStatics::GetActorOfClass(WorldContext, T::StaticClass())); }
+T* GetActorOfClass(const UObject* WorldContext) { return Cast<T>(UGameplayStatics::GetActorOfClass(WorldContext, T::StaticClass())); }
+
+template<typename T>
+T UnLerp(T Val, T Min, T Max) { return (Val - Min) / (Max - Min); }

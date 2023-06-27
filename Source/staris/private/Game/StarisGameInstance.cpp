@@ -3,7 +3,12 @@
 
 #include "Game/StarisGameInstance.h"
 
+#include "Empire/BuildingTypeProperties.h"
 #include "Empire/ResourceTypeProperties.h"
+#include "Empire/VanillaBuildingTypeProperties.h"
+#include "Empire/VanillaResourceTypeProperties.h"
+#include "GenericPlatform/GenericPlatformHttp.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Universe/CompositeDatabase.h"
 #include "Universe/LetterNames.h"
 #include "Universe/StarNames.h"
@@ -11,10 +16,37 @@
 
 void UStarisGameInstance::InitAssets_Implementation ()
 {
-	//FStarMetaData::Collection.Add(FStarMetaData::TYPE_Blue, UJsonUtils::StringToJson("{\"color\": {\"R\": 0, \"G\": 0, \"B\": 1, \"A\": 1}}"));
-	//FStarMetaData::Collection.Add(FStarMetaData::TYPE_Red, UJsonUtils::StringToJson("{\"color\": {\"R\": 1, \"G\": 0, \"B\": 0, \"A\": 1}}"));
-	//FStarMetaData::Collection.Add(FStarMetaData::TYPE_Yellow, UJsonUtils::StringToJson("{\"color\": {\"R\": 1, \"G\": 1, \"B\": 0, \"A\": 1}}"));
-	//FStarMetaData::Collection.Add(FStarMetaData::TYPE_Black_Star, UJsonUtils::StringToJson("{\"color\": {\"R\": 0, \"G\": 0, \"B\": 0, \"A\": 1}}"));
+	UVanillaResourceTypeProperties* ResourceProps;
+
+	ResourceProps = ResourceTypeDatabase->GetOrCreateRecord("ferite")->GetOrCreateComponent<UVanillaResourceTypeProperties>();
+	ResourceProps->Title = NSLOCTEXT("Resources", "Ferite", "Ferite");
+	ResourceProps->MineralDensityPerLayer = {0.5, 0.6, 0.9};
+
+	ResourceProps = ResourceTypeDatabase->GetOrCreateRecord("gold")->GetOrCreateComponent<UVanillaResourceTypeProperties>();
+	ResourceProps->Title = NSLOCTEXT("Resources", "Gold", "Gold");
+	ResourceProps->MineralDensityPerLayer = {0.2, 0.3, 0.4};
+
+	ResourceProps = ResourceTypeDatabase->GetOrCreateRecord("titanium")->GetOrCreateComponent<UVanillaResourceTypeProperties>();
+	ResourceProps->Title = NSLOCTEXT("Resources", "Titanium", "Titanium");
+	ResourceProps->MineralDensityPerLayer = {0.4, 0.5, 0.7};
+
+	ResourceProps = ResourceTypeDatabase->GetOrCreateRecord("aluminium")->GetOrCreateComponent<UVanillaResourceTypeProperties>();
+	ResourceProps->Title = NSLOCTEXT("Resources", "Aluminium", "Aluminium");
+	ResourceProps->MineralDensityPerLayer = {0.4, 0.5, 0.3};
+	
+	UVanillaBuildingTypeProperties* BuildingProps;
+
+	BuildingProps = BuildingTypeDatabase->GetOrCreateRecord("shipyard")->GetOrCreateComponent<UVanillaBuildingTypeProperties>();
+	BuildingProps->Title = NSLOCTEXT("Buildings", "ShipYard_Title", "Ship Yard");
+	BuildingProps->Description = NSLOCTEXT("Buildings", "ShipYard_Description", "Allows you to build ships on planet.");
+	BuildingProps->SingleOfType = true;
+	BuildingProps->AddFlags = {"shipyard"};
+
+	BuildingProps = BuildingTypeDatabase->GetOrCreateRecord("dome")->GetOrCreateComponent<UVanillaBuildingTypeProperties>();
+	BuildingProps->Title = NSLOCTEXT("Buildings", "Dome_Title", "Dome");
+	BuildingProps->Description = NSLOCTEXT("Buildings", "Dome_Description", "Habitants can live under that dome. Partly negates disadvantages of extreme temperature and toxic atmosphere.");
+	BuildingProps->SingleOfType = true;
+	BuildingProps->AddFlags = {"dome", "ignore_temperature"};
 }
 
 UStarisGameInstance::UStarisGameInstance()
@@ -35,6 +67,9 @@ void UStarisGameInstance::Init()
 
 	ResourceTypeDatabase = NewObject<UCompositeDatabase>(this);
 	ResourceTypeDatabase->RecordComponentType = UResourceTypeProperties::StaticClass();
+
+	BuildingTypeDatabase = NewObject<UCompositeDatabase>(this);
+	BuildingTypeDatabase->RecordComponentType = UBuildingTypeProperties::StaticClass();
 
 	InitAssets();
 }
@@ -96,4 +131,22 @@ bool UStarisGameInstance::SwitchGameStage(EGameStage NewGameStage)
 
 	// NOT OK
 	return false;
+}
+
+FString UStarisGameInstance::MakeUrl(const TMap<FString, FString>& Map)
+{
+	TArray<FString> ResultArray;
+	for (auto& Pair : Map)
+	{
+		if (Pair.Value.IsEmpty())
+		{
+			ResultArray.Add(Pair.Key);
+		}
+		else
+		{
+			ResultArray.Add(Pair.Key + "=" + FGenericPlatformHttp::UrlEncode(Pair.Value));
+		}
+	}
+
+	return FString::Join(ResultArray, TEXT("&"));
 }

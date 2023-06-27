@@ -8,6 +8,7 @@
 
 #include "GalaxyGenerator.generated.h"
 
+class UStarisGameInstance;
 class AGalaxySettingsManager;
 class AStarisGameMode;
 class UGalaxySettings;
@@ -25,8 +26,8 @@ public:
 	virtual void GenerateSystem(FSystemMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings, UCompositeRecord* Context) const {};
 	virtual void GenerateStar(FStarMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings, UCompositeRecord* Context) const {};
 	virtual void GeneratePlanet(FPlanetMetaData& Data, int32 SubSeed, AGalaxySettingsManager* Settings, UCompositeRecord* Context) const {};
-	virtual void GeneratePlanetRegion(FPlanetRegionMetadata& Data, int32 SubSeed, AGalaxySettingsManager* Settings, UCompositeRecord* Context) const {};
+	virtual void GeneratePlanetLayer(FPlanetLayer& Data, int32 SubSeed, AGalaxySettingsManager* Settings, UCompositeRecord* Context) const {};
 
 	UPROPERTY()
-	UCompositeDatabase* StarTypeDatabase;
+	UStarisGameInstance* GameInstance;
 };

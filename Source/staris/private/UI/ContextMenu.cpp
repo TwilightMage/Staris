@@ -55,3 +55,11 @@ bool UContextMenuActionCPP::IsEnabled() const
 
 	return true;
 }
+
+void UContextMenuSeparator::AddSeparatorIfNeeded(TArray<UContextMenuItem*>& ItemSet)
+{
+	if (!ItemSet.IsEmpty() && !ItemSet.Last()->IsA<UContextMenuSeparator>())
+	{
+		ItemSet.Add(NewObject<UContextMenuSeparator>());
+	}
+}

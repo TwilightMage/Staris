@@ -21,6 +21,9 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual FString InitNewPlayer(APlayerController* NewPlayerController, const FUniqueNetIdRepl& UniqueId, const FString& Options, const FString& Portal) override;
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+
+	const TArray<UEmpire*>& GetEmpires() const { return Empires; }
 
 private:
 	void GenerateGalaxy();
@@ -29,6 +32,8 @@ private:
 	void GameStarted(bool IsVeryFirstStart);
 
 	void Setup();
+
+	TArray<UEmpireGenerator*> EmpireGenerators;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	TArray<UEmpire*> Empires;

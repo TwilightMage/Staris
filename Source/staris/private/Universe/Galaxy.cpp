@@ -3,13 +3,21 @@
 #include "Universe/Galaxy.h"
 
 #include "StarisStatics.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Empire/Empire.h"
 #include "Game/StarisGameInstance.h"
+#include "Game/StarisGameMode.h"
+#include "Game/StarisGraphicsSettings.h"
 #include "Kismet/GameplayStatics.h"
+#include "Materials/MaterialParameterCollectionInstance.h"
 #include "Universe/CelestialEntity.h"
 #include "Universe/CompositeDatabase.h"
 #include "Universe/GalaxySettingsManager.h"
+#include "Universe/Star.h"
+#include "Universe/StarisInstancedStaticMesh.h"
 #include "Universe/System.h"
 #include "Universe/VanillaGalaxyGenerator.h"
+#include "Universe/VanillaStarTypeProperties.h"
 
 AGalaxy::AGalaxy()
 	: AActor()
@@ -29,6 +37,9 @@ AGalaxy::AGalaxy()
 void AGalaxy::BeginPlay()
 {
 	Super::BeginPlay();
+
+	SetTimeScale(1);
+	PauseTime(true);
 }
 
 void AGalaxy::ApplyPattern(const FGalaxyMetaData& Data)
@@ -38,21 +49,52 @@ void AGalaxy::ApplyPattern(const FGalaxyMetaData& Data)
 		UE_LOG(LogStaris, Error, TEXT("Pattern already has been applied to galaxy %s"), *Id.ToString())
 		return;
 	}
-	
-	Id = Data.Id;
-#if WITH_EDITOR
-	SetActorLabel(FString::Printf(TEXT("Galaxy_%s"), *Id.ToString()));
-#endif
 
-	Systems.Reserve(Data.Systems.Num());
+	TSet<UCompositeRecord*> UsedStarTypes;
 	for (auto& System : Data.Systems)
 	{
-		auto SystemActor = GetWorld()->SpawnActor<ASystem>(SystemClass);
-		SystemActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-		SystemActor->InitCelestialEntity(this);
-		SystemActor->ApplyPattern(System);
+		for (auto Star : System.Stars)
+		{
+			UsedStarTypes.Add(Star.Type);
+		}
+	}
 
-		Systems.Add(SystemActor);
+	for (auto StarType : UsedStarTypes)
+	{
+		auto VanillaStarType = StarType->GetOrCreateComponent<UVanillaStarTypeProperties>();
+		
+		auto InstancedMesh = NewObject<UStarisInstancedStaticMesh>(this);
+		InstancedMesh->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		InstancedMesh->RegisterComponent();
+		InstancedMesh->Mobility = EComponentMobility::Static;
+		InstancedMesh->SetStaticMesh(StarMesh);
+		InstancedMesh->SetMaterial(0, VanillaStarType->MaterialInstance);
+		StarMeshes.Add(StarType, InstancedMesh);
+	}
+
+	auto GraphicsSettings = GetActorOfClass<AStarisGraphicsSettings>(this);
+
+	PlanetMeshes = NewObject<UStarisInstancedStaticMesh>(this);
+	PlanetMeshes->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	PlanetMeshes->RegisterComponent();
+	PlanetMeshes->Mobility = EComponentMobility::Static;
+	PlanetMeshes->InstanceStartCullDistance = 1000 * GraphicsSettings->GetPlanetRenderDistanceScale();
+	PlanetMeshes->InstanceEndCullDistance = 1500 * GraphicsSettings->GetPlanetRenderDistanceScale();
+	PlanetMeshes->SetStaticMesh(PlanetMesh);
+	PlanetMeshes->SetMaterial(0, PlanetMaterial);
+	
+	Id = Data.Id;
+	Seed = Data.Seed;
+	RegisterObjectById(Id, this);
+
+	Systems.Reserve(Data.Systems.Num());
+	for (auto& SystemData : Data.Systems)
+	{
+		auto System = NewObject<USystem>(this, SystemClass);
+		System->InitCelestialEntity(this);
+		System->ApplyPattern(SystemData);
+
+		Systems.Add(System);
 	}
 }
 
@@ -63,20 +105,27 @@ void AGalaxy::SetTimeScale(float NewTimeScale)
 	GetWorld()->GetTimerManager().ClearTimer(DayTickHandle);
 
 	TimeScale = NewTimeScale;
+	bPaused = TimeScale == 0;
 	if (TimeScale > 0)
 	{
 		if (!bIsGameStarted)
 		{
 			bIsGameStarted = true;
-			GameStarted.Broadcast(false);
+			OnGameStarted.Broadcast(false);
 		}
 		
 		GetWorld()->GetTimerManager().SetTimer(DayTickHandle, FTimerDelegate::CreateUObject(this, &AGalaxy::DayPassed), 1 / TimeScale, true);
+
+		OnTimeStateChanged.Broadcast(TimeScale, bPaused);
+		OnTimeStateChanged_K2.Broadcast(TimeScale, bPaused);
 	}
 }
 
 void AGalaxy::PauseTime(bool Pause)
 {
+	if (bPaused == Pause) return;
+	
+	bPaused = Pause;
 	if (Pause)
 	{
 		GetWorld()->GetTimerManager().PauseTimer(DayTickHandle);
@@ -85,9 +134,12 @@ void AGalaxy::PauseTime(bool Pause)
 	{
 		GetWorld()->GetTimerManager().UnPauseTimer(DayTickHandle);
 	}
+
+	OnTimeStateChanged.Broadcast(TimeScale, bPaused);
+	OnTimeStateChanged_K2.Broadcast(TimeScale, bPaused);
 }
 
-void AGalaxy::TogglePauseTime()
+bool AGalaxy::TogglePauseTime()
 {
 	auto& TimerManager = GetWorld()->GetTimerManager();
 	if (TimerManager.TimerExists(DayTickHandle))
@@ -95,16 +147,26 @@ void AGalaxy::TogglePauseTime()
 		if (TimerManager.IsTimerPaused(DayTickHandle))
 		{
 			TimerManager.UnPauseTimer(DayTickHandle);
+			bPaused = false;
+
+			OnTimeStateChanged.Broadcast(TimeScale, bPaused);
+			OnTimeStateChanged_K2.Broadcast(TimeScale, bPaused);
 		}
 		else
 		{
 			TimerManager.PauseTimer(DayTickHandle);
+			bPaused = true;
+
+			OnTimeStateChanged.Broadcast(TimeScale, bPaused);
+			OnTimeStateChanged_K2.Broadcast(TimeScale, bPaused);
 		}
 	}
 	else
 	{
 		SetTimeScale(1);
 	}
+
+	return bPaused;
 }
 
 AGalaxy* AGalaxy::GetGalaxy(UObject* WorldContextObject)
@@ -112,9 +174,52 @@ AGalaxy* AGalaxy::GetGalaxy(UObject* WorldContextObject)
 	return Cast<AGalaxy>(UGameplayStatics::GetActorOfClass(WorldContextObject ? WorldContextObject : GEngine->GetWorld(), AGalaxy::StaticClass()));
 }
 
-const TArray<ASystem*>& AGalaxy::GetSystems() const
+const TArray<USystem*>& AGalaxy::GetSystems() const
 {
 	return Systems;
+}
+
+int32 AGalaxy::GenerateGalaxySeed()
+{
+	return FMath::Rand();
+}
+
+UMeshInstanceRef* AGalaxy::CreateStarInstance(UCompositeRecord* StarType, const FTransform& StarTransform)
+{
+	return StarMeshes[StarType]->AddObjectInstance(StarTransform);
+}
+
+UMeshInstanceRef* AGalaxy::CreatePlanetInstance(const FTransform& PlanetTransform)
+{
+	return PlanetMeshes->AddObjectInstance(PlanetTransform);
+}
+
+void AGalaxy::SetStarsScale(float Scale)
+{
+	if (Scale == StarSizeBiasCached) return;
+	StarSizeBiasCached = Scale;
+
+	//for (int32 i = 0; i < Systems.Num(); i++)
+	//{
+	//	auto& Stars = Systems[i]->GetStars();
+	//	for (int32 j = 0; j < Stars.Num(); j++)
+	//	{
+	//		Stars[j]->MeshInstance->GetSourceWeak()->settrans
+	//	}
+	//}
+
+	UMaterialParameterCollectionInstance* Instance = GetWorld()->GetParameterCollectionInstance(MaterialParameterCollection);
+	Instance->SetScalarParameterValue("StarScale", Scale);
+}
+
+UObject* AGalaxy::GetObjectById(const FName& ObjectId) const
+{
+	return IdDatabase.FindRef(ObjectId).Get();
+}
+
+void AGalaxy::RegisterObjectById(const FName& ObjectId, UObject* Object)
+{
+	IdDatabase.Add(ObjectId, Object);
 }
 
 void AGalaxy::DayPassed()
@@ -143,8 +248,13 @@ void AGalaxy::DayPassed()
 	{
 		YearUpdateCelestialEntities.Remove(Entity);
 	}
+
+	DaysCounter++;
+
+	OnDayPassed.Broadcast();
+	OnDayPassed_K2.Broadcast();
 	
-	GEngine->AddOnScreenDebugMessage(0, 60, FColor::White, FString::Printf(TEXT("Day %i passed"), DaysCounter));
+	//GEngine->AddOnScreenDebugMessage(0, 60, FColor::White, FString::Printf(TEXT("Day %i passed"), DaysCounter));
 	
 	for (int i = DayUpdateCelestialEntities.Num() - 1; i >= 0; --i)
 	{
@@ -155,9 +265,16 @@ void AGalaxy::DayPassed()
 	{
 		if (DaysCounter % 30 == 0)
 		{
-			static int MonthCounter = 0;
+			auto GameMode = GetActorOfClass<AStarisGameMode>(this);
+			for (auto Empire : GameMode->GetEmpires())
+			{
+				Empire->MonthPassed();
+			}
+			
+			OnMonthPassed.Broadcast();
+			OnMonthPassed_K2.Broadcast();
             		
-            GEngine->AddOnScreenDebugMessage(1, 60, FColor::White, FString::Printf(TEXT("Month %i passed"), DaysCounter / 30));
+            //GEngine->AddOnScreenDebugMessage(1, 60, FColor::White, FString::Printf(TEXT("Month %i passed"), DaysCounter / 30));
         
             for (int i = DayUpdateCelestialEntities.Num() - 1; i >= 0; --i)
             {
@@ -165,13 +282,17 @@ void AGalaxy::DayPassed()
             }
 		}
 
-		if (DaysCounter % (30 * 12) == 0)
+		if (DaysCounter % 360 == 0)
 		{
-			GEngine->AddOnScreenDebugMessage(2, 60, FColor::White, FString::Printf(TEXT("Year %i passed"), DaysCounter / (30 * 12)));
+			OnYearPassed.Broadcast();
+			OnYearPassed_K2.Broadcast();
+			
+			//GEngine->AddOnScreenDebugMessage(2, 60, FColor::White, FString::Printf(TEXT("Year %i passed"), DaysCounter / (30 * 12)));
 		}
 	}
 
-	DaysCounter++;
+	OnDateUpdated.Broadcast(GetDate(), GetMonth(), GetYear());
+	OnDateUpdated_K2.Broadcast(GetDate(), GetMonth(), GetYear());
 }
 
 void AGalaxy::Generate()
@@ -181,7 +302,7 @@ void AGalaxy::Generate()
 		if (auto StarisGameInstance = Cast<UStarisGameInstance>(UGameplayStatics::GetGameInstance(this)))
 		{
 			auto generator = NewObject<UVanillaGalaxyGenerator>();
-			generator->StarTypeDatabase = StarisGameInstance->GetStarTypeDatabase();
+			generator->GameInstance = StarisGameInstance;
 		
 			FGalaxyMetaData data;
 			generator->GenerateGalaxy(data, 1, Settings, NewObject<UCompositeRecord>());

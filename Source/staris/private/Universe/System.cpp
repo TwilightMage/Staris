@@ -3,36 +3,48 @@
 #include "Universe/System.h"
 
 #include "StarisStatics.h"
+#include "Game/StarisGameInstance.h"
 #include "Universe/Galaxy.h"
 #include "Universe/LetterNames.h"
 #include "Universe/Planet.h"
 #include "Universe/Star.h"
 
-ASystem::ASystem()
+USystem::USystem()
 {
-	Root = CreateDefaultSubobject<USceneComponent>("Root");
-	SetRootComponent(Root);
+	
 }
 
-UEmpire* ASystem::GetOwningEmpire()
+UEmpire* USystem::GetOwningEmpire()
 {
 	return OwningEmpire.Get();
 }
 
-void ASystem::RenameSystem(const FString& NewName, bool PropagateToChildren)
+FText USystem::GetTitle() const
+{
+	return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(UStarisGameInstance::DebugToolsEnabled ? Title + " [" + Id.ToString() + "]" : Title);
+}
+
+void USystem::RenameSystem(const FString& NewName, bool PropagateToChildren)
 {
 	Title = NewName;
 
 	if (PropagateToChildren)
 	{
-		for (int32 i = 0; i < Stars.Num(); i++)
+		if (Stars.Num() > 1)
 		{
-			Stars[i]->Title = NewName + "-" + GetLetterName(i);
+			for (int32 i = 0; i < Stars.Num(); i++)
+			{
+				Stars[i]->Title = NewName + "-" + GetLetterName(i);
+			}
+		}
+		else
+		{
+			Stars[0]->Title = NewName;
 		}
 	}
 }
 
-void ASystem::ApplyPattern_Implementation(const FSystemMetaData& Data)
+void USystem::ApplyPattern_Implementation(const FSystemMetaData& Data)
 {
 	if (!Id.IsNone())
 	{
@@ -42,34 +54,28 @@ void ASystem::ApplyPattern_Implementation(const FSystemMetaData& Data)
 
 	Title = Data.Title;
 	Id = Data.Id;
-#if WITH_EDITOR
-	SetActorLabel(FString::Printf(TEXT("System_%s"), *Id.ToString()));
-#endif
-	SetActorRelativeLocation(Data.Location);
+	Seed = Data.Seed;
+	Location = Data.Location;
 	
 	if (auto Galaxy = GetGalaxy())
 	{
+		Galaxy->RegisterObjectById(Id, this);
+		
 		for (const auto& Star : Data.Stars)
 		{
 			const auto StarEntity = NewObject<UStar>(this, Galaxy->StarClass);
-			StarEntity->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
-			StarEntity->RegisterComponent();
 			StarEntity->InitCelestialEntity(Galaxy);
 			StarEntity->ApplyPattern(Star);
-
-			StarEntity->System = this;
+			
 			Stars.Add(StarEntity);
 		}
 
 		for (const auto& Planet : Data.Planets)
 		{
 			const auto PlanetEntity = NewObject<UPlanet>(this, Galaxy->PlanetClass);
-			PlanetEntity->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
-			PlanetEntity->RegisterComponent();
 			PlanetEntity->InitCelestialEntity(Galaxy);
 			PlanetEntity->ApplyPattern(Planet);
-
-			PlanetEntity->System = this;
+			
 			Planets.Add(PlanetEntity);
 		}
 	}

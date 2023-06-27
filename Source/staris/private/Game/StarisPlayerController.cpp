@@ -8,10 +8,10 @@
 #include "Components/AudioComponent.h"
 #include "Game/StarisPlayerPawn.h"
 #include "Kismet/GameplayStatics.h"
-#include "Sound/SoundCue.h"
 #include "UI/ContextMenu.h"
 #include "UI/ToolTip.h"
 #include "Universe/Planet.h"
+#include "Universe/StarisInstancedStaticMesh.h"
 #include "Universe/System.h"
 
 
@@ -23,7 +23,7 @@ AStarisPlayerController::AStarisPlayerController()
 
 	MusicPlayer->OnAudioFinishedNative.AddWeakLambda(this, [this](UAudioComponent*)
 	{
-		PlayNextSound();
+		PlayNextMusic();
 	});
 	
 	PrimaryActorTick.bCanEverTick = true;
@@ -36,9 +36,18 @@ void AStarisPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	SetInputMode(FInputModeGameAndUI());
+	UKismetSystemLibrary::ExecuteConsoleCommand(this, "stat fps");
+	UKismetSystemLibrary::ExecuteConsoleCommand(this, "stat unit");
+	UKismetSystemLibrary::ExecuteConsoleCommand(this, "t.maxfps 300");
 
-	PlayNextSound();
+	FInputModeGameAndUI InputMode;
+	InputMode.SetHideCursorDuringCapture(false);
+	SetInputMode(InputMode);
+
+	InputComponent->BindAction("AssignOrder", IE_Pressed, this, &AStarisPlayerController::AssignOrderPressed);
+	InputComponent->BindAction("AssignOrder", IE_Released, this, &AStarisPlayerController::AssignOrderReleased);
+
+	PlayNextMusic();
 }
 
 void AStarisPlayerController::Tick(float DeltaSeconds)
@@ -59,6 +68,16 @@ void AStarisPlayerController::Tick(float DeltaSeconds)
 		{
 			NewTargetedFocusable = Focusable;
 		}
+		else if (auto StarisInstancedMesh = Cast<UStarisInstancedStaticMesh>(Component))
+		{
+			if (auto InstanceRef = StarisInstancedMesh->TryGetObjectRef(Hit.Item))
+			{
+				if (auto FocusableInstance = Cast<IFocusable>(InstanceRef->Object))
+				{
+					NewTargetedFocusable = FocusableInstance;
+				}
+			}
+		}
 	}
 	else
 	{
@@ -76,7 +95,7 @@ void AStarisPlayerController::Tick(float DeltaSeconds)
 
 		if (FocusableUnderMouse)
 		{
-			CurrentToolTip = FocusableUnderMouse->CreateToolTip();
+			CurrentToolTip = NewObject<UToolTip>(this, ToolTipClass);
 			CurrentToolTip->SetOwningPlayer(this);
 			CurrentToolTip->AddToPlayerScreen(1001);
 				
@@ -120,7 +139,7 @@ void AStarisPlayerController::OnPossess(APawn* InPawn)
 	{
 		if (auto StarisPlayerPawn = Cast<AStarisPlayerPawn>(InPawn))
 		{
-			StarisPlayerPawn->MoveToTarget(OwnedEmpire->GetOwnedSystems()[0]->GetRootComponent(), false);
+			StarisPlayerPawn->MoveToLocation(OwnedEmpire->Capital->GetLocation());
 		}
 	}
 }
@@ -134,7 +153,7 @@ void AStarisPlayerController::AssignEmpire(UEmpire* Empire)
 {
 	if (OwnedEmpire)
 	{
-		OwnedEmpire->SystemChanged.RemoveAll(this);
+		OwnedEmpire->OnSystemChanged.RemoveAll(this);
 
 		NotifyControllerRemoved(OwnedEmpire);
 
@@ -147,11 +166,11 @@ void AStarisPlayerController::AssignEmpire(UEmpire* Empire)
 	{
 		NotifyControllerAssigned(OwnedEmpire);
 		
-		OwnedEmpire->SystemChanged.AddUObject(this, &AStarisPlayerController::EmpireSystemChanged);
+		OwnedEmpire->OnSystemChanged.AddUObject(this, &AStarisPlayerController::EmpireSystemChanged);
 		
 		if (auto StarisPlayerPawn = Cast<AStarisPlayerPawn>(GetPawn()))
 		{
-			StarisPlayerPawn->MoveToTarget(OwnedEmpire->Capital, false);
+			StarisPlayerPawn->MoveToLocation(OwnedEmpire->Capital->GetLocation());
 		}	
 	}
 }
@@ -167,6 +186,11 @@ void AStarisPlayerController::Click()
 	{
 		CurrentContextMenu->RemoveFromParent();
 		CurrentContextMenu = nullptr;
+	}
+
+	if (FocusableUnderMouse)
+	{
+		SelectFocusable(FocusableUnderMouse);
 	}
 }
 
@@ -188,24 +212,36 @@ void AStarisPlayerController::OpenContextMenu()
 		CurrentContextMenu = nullptr;
 	}
 
-	TArray<TArray<UContextMenuItem*>> Items;
+	TArray<UContextMenuItem*> Items;
 	
 	if (OwnedEmpire)
 	{
 		const auto ItemSet = OwnedEmpire->CreateContextActions(FocusableUnderMouse, SelectedFocusable);
-		if (!ItemSet.IsEmpty()) Items.Add(ItemSet);
+		if (!ItemSet.IsEmpty())
+		{
+			UContextMenuSeparator::AddSeparatorIfNeeded(Items);
+			Items.Append(ItemSet);
+		}
 	}
 
 	if (FocusableUnderMouse)
 	{
 		const auto ItemSet = FocusableUnderMouse->CreateContextActionsHovered(SelectedFocusable);
-		if (!ItemSet.IsEmpty()) Items.Add(ItemSet);
+		if (!ItemSet.IsEmpty())
+		{
+			UContextMenuSeparator::AddSeparatorIfNeeded(Items);
+			Items.Append(ItemSet);
+		}
 	}
 
 	if (SelectedFocusable)
 	{
 		const auto ItemSet = SelectedFocusable->CreateContextActionsSelected(FocusableUnderMouse);
-		if (!ItemSet.IsEmpty()) Items.Add(ItemSet);
+		if (!ItemSet.IsEmpty())
+		{
+			UContextMenuSeparator::AddSeparatorIfNeeded(Items);
+			Items.Append(ItemSet);
+		}
 	}
 
 	if (!Items.IsEmpty())
@@ -218,33 +254,64 @@ void AStarisPlayerController::OpenContextMenu()
 		GetMousePosition(MousePos.X, MousePos.Y);
 		CurrentContextMenu->SetPositionInViewport(MousePos);
 
-		for (int32 i = 0; i < Items.Num(); i++)
+		for (auto Item : Items)
 		{
-			if (i > 0) CurrentContextMenu->AddSeparator();
-
-			for (auto& Item : Items[i])
+			if (auto Action = Cast<UContextMenuAction>(Item))
 			{
-				if (auto Action = Cast<UContextMenuAction>(Item))
-				{
-					Action->OwningContextMenu = CurrentContextMenu;
-				}
-				
-				CurrentContextMenu->AddItem(Item);
+				Action->OwningContextMenu = CurrentContextMenu;
 			}
+				
+			CurrentContextMenu->AddItem(Item);
 		}
 	}
 }
 
-void AStarisPlayerController::PlayNextSound()
+void AStarisPlayerController::SelectFocusable(IFocusable* NewFocusable)
+{
+	if (SelectedFocusable == NewFocusable) return;
+	
+	if (SelectedFocusable)
+	{
+		SelectedFocusable->OnDeselected();
+	}
+	
+	SelectedFocusable = NewFocusable;
+
+	SelectedFocusableChanged.Broadcast(SelectedFocusable);
+	SelectedFocusableChanged_K2.Broadcast(Cast<UObject>(SelectedFocusable));
+
+	if (SelectedFocusable)
+	{
+		SelectedFocusable->OnSelected();
+	}
+}
+
+void AStarisPlayerController::SelectFocusable_K2(const TScriptInterface<IFocusable>& NewFocusable)
+{
+	SelectFocusable(NewFocusable.GetInterface());
+}
+
+void AStarisPlayerController::PlayNextMusic()
 {
 	if (!MusicPlaySet.IsEmpty())
 	{
-		MusicPlayer->SetSound(MusicPlaySet[FMath::Rand() % MusicPlaySet.Num()]);
+		USoundBase* Music;
+		if (MusicPlaySet.Num() > 1)
+		{
+			auto MusicToPlay = MusicPlaySet;
+			MusicToPlay.Remove(MusicPlayer->GetSound());
+			Music = MusicToPlay[FMath::Rand() % MusicToPlay.Num()];
+		}
+		else
+		{
+			Music = MusicPlaySet[0];
+		}
+		MusicPlayer->SetSound(Music);
 		MusicPlayer->Play();
 	}
 }
 
-void AStarisPlayerController::EmpireSystemChanged(ASystem* System, bool TakenOrLost)
+void AStarisPlayerController::EmpireSystemChanged(USystem* System, bool TakenOrLost)
 {
 	//UGameplayStatics::PlaySound2D(this, NotificationSound);
 	if (TakenOrLost)

@@ -3,34 +3,62 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Fleet.h"
+#include "Focusable.h"
 #include "Components/SceneComponent.h"
 #include "Ship.generated.h"
 
+class UMeshInstanceRef;
 class UCompositeRecord;
 class AFleet;
 
 UCLASS(Abstract, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class STARIS_API UShip : public USceneComponent
+class STARIS_API UShip : public UObject, public IFocusable
 {
 	GENERATED_BODY()
-
-	friend AFleet;
-
 public:
 	UShip();
 
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void Setup(UEmpire* Empire);
 
+	virtual void SetupToolTip(UToolTip* ToolTip) override;
+
+	virtual void OnSelected() override;
+
+	UFUNCTION(BlueprintPure)
+	virtual bool CanExecuteOrder(UFleetOrder* Order) const { return false; }
+
+	UFUNCTION(BlueprintPure)
+	virtual bool FullFleetShip() const { return false; }
+
+	UFUNCTION(BlueprintPure)
+	AFleet* GetFleet() const { return Cast<AFleet>(GetOuter()); }
+
+	UFUNCTION(BlueprintPure)
+	UCompositeRecord* GetType() const { return Type; }
+
+	UFUNCTION(BlueprintPure)
+	float GetSpeed() const;
+	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	int32 ControlRequired;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	UStaticMeshComponent* StaticMesh;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UStaticMesh* StaticMesh;
+
+	UPROPERTY()
+	UMeshInstanceRef* MeshInstanceRef;
+
+	virtual void TickOrder(float TimeDelta) {}
+	
+	void Tick(float TickDelta, const FTransform& FleetTransform, FTransform& NewShipTransform);
+	FTransform Transform;
+	FVector PositionInFormation;
+
+	virtual FText GetClassTitle() const { return FText(); }
 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(AllowPrivateAccess))
 	UCompositeRecord* Type;
-	
-	TWeakObjectPtr<AFleet> OwningFleet;
 };

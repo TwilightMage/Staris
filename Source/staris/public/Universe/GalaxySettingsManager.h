@@ -20,7 +20,7 @@ class STARIS_API AGalaxySettingsManager : public AActor
 	friend UStarisGameInstance;
 
 public:
-	UFUNCTION(CallInEditor, Category="Galaxy Settings Manager")
+	UFUNCTION(BlueprintCallable, CallInEditor, Category="Galaxy Settings Manager")
 	void UpdateSettingsSet();
 
 	template<typename T>
@@ -34,11 +34,15 @@ public:
 		return nullptr;
 	}
 
+	UFUNCTION(BlueprintCallable, DisplayName="Get Settings", meta=(AutoCreateRefTerm=Class, DeterminesOutputType=Class))
+	UGalaxySettings* GetSettings_K2(const TSubclassOf<UGalaxySettings>& Class) const;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TMap<TSubclassOf<UGalaxySettings>, UGalaxySettings*> SettingsObjects;
+
+	UFUNCTION(BlueprintPure)
+	static TArray<TSubclassOf<UGalaxySettings>> FindGalaxySettingsClasses();
 	
 private:
-	void FindGalaxySettingsClasses();
-	
 	TArray<TSubclassOf<UGalaxySettings>> SettingsClasses;
 };

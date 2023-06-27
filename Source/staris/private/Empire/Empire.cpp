@@ -4,9 +4,10 @@
 #include "Empire/Empire.h"
 
 #include "StarisStatics.h"
+#include "Empire/Colony.h"
+#include "Empire/EmpirePlanetKnowledge.h"
 #include "Game/StarisController.h"
 #include "Game/StarisGameInstance.h"
-#include "Game/StarisPlayerController.h"
 #include "UI/ContextMenu.h"
 #include "Universe/Planet.h"
 #include "Universe/Star.h"
@@ -25,12 +26,12 @@ bool UEmpire::IsAssignedToPlayer() const
 	return false;
 }
 
-void UEmpire::TakeSystem(ASystem* System)
+void UEmpire::TakeSystem(USystem* System)
 {
 	if (auto OldEmpire = System->OwningEmpire.Get())
 	{
 		OldEmpire->OwnedSystems.Remove(System);
-		OldEmpire->SystemChanged.Broadcast(System, false);
+		OldEmpire->OnSystemChanged.Broadcast(System, false);
 
 		UE_LOG(LogStaris, Log, TEXT("System %s was lost by empire \"%s\""), *System->Id.ToString(), *OldEmpire->Title);
 	}
@@ -38,7 +39,7 @@ void UEmpire::TakeSystem(ASystem* System)
 	System->OwningEmpire = this;
 	
 	OwnedSystems.Add(System);
-	SystemChanged.Broadcast(System, true);
+	OnSystemChanged.Broadcast(System, true);
 
 	UE_LOG(LogStaris, Log, TEXT("System %s was taken by empire \"%s\""), *System->Id.ToString(), *Title);
 }
@@ -72,6 +73,76 @@ TArray<UContextMenuItem*> UEmpire::CreateContextActions(IFocusable* HoveredFocus
 	return Items;
 }
 
+UEmpirePlanetKnowledge* UEmpire::GetPlanetKnowledge(UPlanet* Planet) const
+{
+	return PlanetKnowledgeDatabase.FindRef(Planet);
+}
+
+UEmpirePlanetKnowledge* UEmpire::GetOrCreatePlanetKnowledge(UPlanet* Planet)
+{
+	auto& Knowledge = PlanetKnowledgeDatabase.FindOrAdd(Planet);
+	if (!Knowledge)
+	{
+		Knowledge = NewObject<UEmpirePlanetKnowledge>(this);
+		Knowledge->Setup(Planet);
+
+		OnPlanetKnowledgeAdded.Broadcast(Knowledge);
+		OnPlanetKnowledgeAdded_K2.Broadcast(Knowledge);
+	}
+	return Knowledge;
+}
+
+void UEmpire::MonthPassed()
+{
+	TMap<UColony*, TMap<UCompositeRecord*, int32>> ColonySpends;
+	BalanceUpdateData BalanceUpdate;
+	
+	for (auto System : OwnedSystems)
+	{
+		for (auto Planet : System->GetPlanets())
+		{
+			if (auto Colony = Planet->GetColony())
+			{
+				auto ColonyBalance = Colony->GetResourceBalance();
+				for (auto& ColonyBalanceEntry : ColonyBalance)
+				{
+					auto& BalanceUpdateEntry = BalanceUpdate.FindOrAdd(ColonyBalanceEntry.Key);
+					BalanceUpdateEntry.Balance += ColonyBalanceEntry.Value;
+					if (ColonyBalanceEntry.Value > 0)
+					{
+						BalanceUpdateEntry.Amount = CurrentBalance.FindOrAdd(ColonyBalanceEntry.Key) += ColonyBalanceEntry.Value;
+					}
+					else if (ColonyBalanceEntry.Value < 0)
+					{
+						ColonySpends.FindOrAdd(Colony).Add(ColonyBalanceEntry);
+					}
+				}
+			}
+		}
+	}
+
+	for (auto& ColonySpend : ColonySpends)
+	{
+		for (auto& Spend : ColonySpend.Value)
+		{
+			auto& BalanceEntryAmount = CurrentBalance.FindOrAdd(Spend.Key);
+			if (BalanceEntryAmount + Spend.Value < 0)
+			{
+				//Spend.Value - *BalanceEntry; // failed to fulfill
+				BalanceEntryAmount = 0;
+			}
+			else
+			{
+				BalanceEntryAmount += Spend.Value;
+			}
+			BalanceUpdate.FindOrAdd(Spend.Key).Amount = BalanceEntryAmount;
+		}
+	}
+
+	OnBalanceUpdated.Broadcast(BalanceUpdate);
+	LatestBalanceUpdate = BalanceUpdate;
+}
+
 void UEmpire::ClearControllerList()
 {
 	OwningControllers.Empty();
@@ -89,12 +160,12 @@ void UEmpire::ControllerRemoved(IStarisController* Controller)
 	OwningControllers.Remove(Controller);
 }
 
-void UEmpire::SystemTaken(ASystem* System)
+void UEmpire::SystemTaken(USystem* System)
 {
 	OwnedSystems.Add(System);
 }
 
-void UEmpire::SystemLost(ASystem* System)
+void UEmpire::SystemLost(USystem* System)
 {
 	OwnedSystems.Remove(System);
 }

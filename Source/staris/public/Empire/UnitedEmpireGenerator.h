@@ -15,7 +15,9 @@ class STARIS_API UUnitedEmpireGenerator : public UEmpireGenerator
 	GENERATED_BODY()
 
 public:
-	virtual UEmpire* Generate_Implementation(AGalaxy* Galaxy) override;
+	virtual UEmpire* Generate_Implementation(AGalaxy* Galaxy, int32 Seed) override;
+
+	virtual void FillSettingsPanel(USettingsPanel* SettingsPanel, const TSharedPtr<FJsonObject>& Json) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 TotalPops;

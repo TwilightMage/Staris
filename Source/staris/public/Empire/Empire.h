@@ -3,19 +3,29 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ResourceAmountState.h"
 #include "UObject/Object.h"
 #include "Empire.generated.h"
 
+class UEmpirePlanetKnowledge;
+class UCompositeRecord;
+class UColony;
 class UContextMenu;
 class IFocusable;
 class URace;
 class UPlanet;
-class ASystem;
+class USystem;
 class AStarisPlayerController;
 class IStarisController;
 class UContextMenuItem;
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FEmpireSystemChanged, ASystem* /* System */, bool /* Taken or Lost */);
+typedef TMap<UCompositeRecord*, FResourceAmountState> BalanceUpdateData;
+
+DECLARE_MULTICAST_DELEGATE_TwoParams(FEmpireSystemChangedEvent, USystem* /* System */, bool /* Taken or Lost */);
+DECLARE_MULTICAST_DELEGATE_OneParam(FEmpireBalanceUpdatedEvent, const BalanceUpdateData& /* New Balance */);
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FEmpirePlanetKnowledgeAddedEvent, UEmpirePlanetKnowledge* /* New Knowledge */);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEmpirePlanetKnowledgeAddedDynamicEvent, UEmpirePlanetKnowledge*, NewKnowledge);
 
 /**
  * 
@@ -26,7 +36,8 @@ class STARIS_API UEmpire : public UObject
 	GENERATED_BODY()
 
 	friend IStarisController;
-	friend ASystem;
+	friend USystem;
+	friend UColony;
 	
 public:
 	const TArray<IStarisController*>& GetOwningControllers() const { return OwningControllers; }
@@ -34,11 +45,22 @@ public:
 	bool IsAssignedToPlayer() const;
 
 	UFUNCTION(BlueprintCallable)
-	void TakeSystem(ASystem* System);
+	void TakeSystem(USystem* System);
 
 	TArray<UContextMenuItem*> CreateContextActions(IFocusable* HoveredFocusable, IFocusable* SelectedFocusable);
 	
-	const TArray<ASystem*>& GetOwnedSystems() const { return OwnedSystems; }
+	const TArray<USystem*>& GetOwnedSystems() const { return OwnedSystems; }
+
+	const TMap<UCompositeRecord*, int32>& GetBalance() const { return CurrentBalance; }
+	const TMap<UCompositeRecord*, FResourceAmountState>& GetLatestBalanceUpdate() const { return LatestBalanceUpdate; }
+
+	UFUNCTION(BlueprintPure)
+	UEmpirePlanetKnowledge* GetPlanetKnowledge(UPlanet* Planet) const;
+	
+	UFUNCTION(BlueprintPure)
+	UEmpirePlanetKnowledge* GetOrCreatePlanetKnowledge(UPlanet* Planet);
+
+	void MonthPassed();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Title;
@@ -49,18 +71,33 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<URace*> FounderRaces;
 	
-	FEmpireSystemChanged SystemChanged;
+	FEmpireSystemChangedEvent OnSystemChanged;
+	FEmpireBalanceUpdatedEvent OnBalanceUpdated;
+
+	UPROPERTY(BlueprintAssignable, DisplayName="On Planet Knowledge Added")
+	FEmpirePlanetKnowledgeAddedDynamicEvent OnPlanetKnowledgeAdded_K2;
+	FEmpirePlanetKnowledgeAddedEvent OnPlanetKnowledgeAdded;
 
 private:
 	void ClearControllerList();
 	void ControllerAssigned(IStarisController* Controller);
 	void ControllerRemoved(IStarisController* Controller);
 	
-	void SystemTaken(ASystem* System);
-	void SystemLost(ASystem* System);
+	void SystemTaken(USystem* System);
+	void SystemLost(USystem* System);
 	
 	TArray<IStarisController*> OwningControllers;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
-	TArray<ASystem*> OwnedSystems;
+	TArray<USystem*> OwnedSystems;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	TArray<UColony*> Colonies;
+
+	UPROPERTY()
+	TMap<UCompositeRecord*, int32> CurrentBalance;
+	TMap<UCompositeRecord*, FResourceAmountState> LatestBalanceUpdate;
+
+	UPROPERTY()
+	TMap<UPlanet*, UEmpirePlanetKnowledge*> PlanetKnowledgeDatabase;
 };

@@ -5,10 +5,14 @@
 
 #include "StarisStatics.h"
 #include "Camera/CameraComponent.h"
+#include "Game/StarisGameSettings.h"
 #include "Game/StarisPlayerController.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Universe/Galaxy.h"
+#include "Universe/GalaxySettingsManager.h"
 #include "Universe/Star.h"
 #include "Universe/System.h"
+#include "Universe/VanillaGalaxySettings.h"
 
 
 AStarisPlayerPawn::AStarisPlayerPawn()
@@ -24,36 +28,84 @@ AStarisPlayerPawn::AStarisPlayerPawn()
 	
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>("Camera");
 	CameraComponent->SetupAttachment(CameraArm);
-	CameraComponent->SetRelativeLocation(FVector(-5000, 0, 0));
+	CameraComponent->SetRelativeLocation(FVector(-1000, 0, 0));
 }
 
 void AStarisPlayerPawn::BeginPlay()
 {
 	Super::BeginPlay();
 
+	Galaxy = GetActorOfClass<AGalaxy>(this);
+	GameSettings = GetActorOfClass<AStarisGameSettings>(this);
+
 	RootComponent->SetWorldLocation(RootComponent->GetComponentLocation() * FVector(1, 1, 0));
 	DesiredLocation = RootComponent->GetComponentLocation();
 
-	DesiredYaw = RootComponent->GetComponentRotation().Yaw;
-	DesiredPitch = CameraArm->GetComponentRotation().Pitch;
+	DesiredYaw = RootComponent->GetRelativeRotation().Yaw;
+	DesiredPitch = CameraArm->GetRelativeRotation().Pitch;
 
-	DesiredCamDist = -CameraComponent->GetComponentLocation().X;
+	//DesiredCamDist = -CameraComponent->GetRelativeLocation().X;
+	DesiredCamDist = GameSettings->MinZoomDistance;
 }
 
 void AStarisPlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	float MovementScale = FMath::Lerp(1.0f, 20.0f, (DesiredCamDist - MinCamDist) / (MaxCamDist - MinCamDist));
-	DesiredLocation += (RootComponent->GetForwardVector() * Movement.X * MovementScale + RootComponent->GetRightVector() * Movement.Y * MovementScale) * DeltaTime * 2000;
+	auto Settings = GetActorOfClass<AGalaxySettingsManager>(this);
+	auto VanillaSettings = Settings->GetSettings<UVanillaGalaxySettings>();
+	
+	float MovementScale = FMath::Lerp(1.0f, 200.0f, UnLerp(DesiredCamDist, GameSettings->MinZoomDistance, GameSettings->MaxZoomDistance));
+	DesiredLocation += (RootComponent->GetForwardVector() * Movement.X * MovementScale + RootComponent->GetRightVector() * Movement.Y * MovementScale) * DeltaTime * 1000;
 	DesiredLocation.Z = 0;
-	RootComponent->SetWorldLocation(FMath::Lerp(RootComponent->GetComponentLocation(), DesiredLocation, DeltaTime * 10));
+	if (DesiredLocation.Size() > VanillaSettings->GalaxyRadius)
+	{
+		DesiredLocation = DesiredLocation.GetUnsafeNormal() * VanillaSettings->GalaxyRadius;
+	}
+	if (FVector::Distance(DesiredLocation, RootComponent->GetComponentLocation()) < KINDA_SMALL_NUMBER)
+	{
+		RootComponent->SetWorldLocation(DesiredLocation);
+	}
+	else
+	{
+		RootComponent->SetWorldLocation(FMath::Lerp(RootComponent->GetComponentLocation(), DesiredLocation, DeltaTime * 10));
+	}
 
-	auto NewRotation = FRotator(FQuat::Slerp(FRotator(CameraArm->GetRelativeRotation().Pitch, RootComponent->GetComponentRotation().Yaw, 0).Quaternion(), FRotator(DesiredPitch, DesiredYaw, 0).Quaternion(), DeltaTime * 20));
+	auto ActualRotation = FRotator(CameraArm->GetRelativeRotation().Pitch, RootComponent->GetComponentRotation().Yaw, 0);
+	auto DesiredRotation = FRotator(DesiredPitch, DesiredYaw, 0);
+	FRotator NewRotation;
+	if (1 - ActualRotation.Vector().Dot(DesiredRotation.Vector()) < SMALL_NUMBER)
+	{
+		NewRotation = DesiredRotation;
+	}
+	else
+	{
+		NewRotation = FRotator(FQuat::Slerp(ActualRotation.Quaternion(), DesiredRotation.Quaternion(), DeltaTime * 20));
+	}
 	RootComponent->SetRelativeRotation(FRotator(0, NewRotation.Yaw, 0));
 	CameraArm->SetRelativeRotation(FRotator(NewRotation.Pitch, 0, 0));
 
-	CameraComponent->SetRelativeLocation(FVector(FMath::Lerp(CameraComponent->GetRelativeLocation().X, -DesiredCamDist, DeltaTime * 10), 0, 0));
+	if (FMath::Abs(-DesiredCamDist - CameraComponent->GetRelativeLocation().X) < 0.1f)
+	{
+		CameraComponent->SetRelativeLocation(FVector(-DesiredCamDist, 0, 0));
+	}
+	else
+	{
+		CameraComponent->SetRelativeLocation(FVector(FMath::Lerp(CameraComponent->GetRelativeLocation().X, -DesiredCamDist, DeltaTime * 10), 0, 0));	
+	}
+
+	//if (Galaxy)
+	//{
+	//	PlanetsVisible = CameraComponent->GetComponentLocation().Z < 15000;
+	//	
+	//	if (PlanetsVisible != PlanetsVisiblePrev)
+	//	{
+	//		Galaxy->SetPlanetsVisible(PlanetsVisible);
+	//		PlanetsVisiblePrev = PlanetsVisible;
+	//	}
+	//}
+
+	Galaxy->SetStarsScale(FMath::Lerp(1.0f, 50.0f, UnLerp((float)CameraComponent->GetComponentLocation().Z, GameSettings->MinZoomDistance, GameSettings->MaxZoomDistance)));
 }
 
 void AStarisPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -118,7 +170,7 @@ void AStarisPlayerPawn::OpenContextMenu()
 
 void AStarisPlayerPawn::PauseGameTime()
 {
-	if (auto Galaxy = GetActorOfClass<AGalaxy>(this))
+	if (Galaxy)
 	{
 		Galaxy->TogglePauseTime();
 	}
@@ -147,20 +199,8 @@ void AStarisPlayerPawn::CameraZoom(float Axis)
 {
 	if (Axis == 0) return;
 	
-	float aspect = (DesiredCamDist - MinCamDist) / (MaxCamDist - MinCamDist);
+	float Aspect = UnLerp(DesiredCamDist, GameSettings->MinZoomDistance, GameSettings->MaxZoomDistance);
 	
-	DesiredCamDist = FMath::Clamp(DesiredCamDist - Axis * 300 * FMath::Lerp(1, 10, aspect), MinCamDist, MaxCamDist);
-
-	float StarScale = FMath::Lerp(1.0f, 4.0f, FMath::Clamp(aspect * 2, 0, 1));
-
-	FVector Scale = FVector(StarScale);
-	auto Galaxy = GetActorOfClass<AGalaxy>(this);
-	for (auto System : Galaxy->GetSystems())
-	{
-		for (auto Star : System->GetStars())
-		{
-			Star->SetRelativeScale3D(Scale);
-		}
-	}
+	DesiredCamDist = FMath::Clamp(DesiredCamDist - Axis * 30 * GameSettings->ScrollSensitivity * FMath::Lerp(1.f, 500.f, Aspect), GameSettings->MinZoomDistance, GameSettings->MaxZoomDistance);
 }
 

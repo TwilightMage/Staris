@@ -7,6 +7,8 @@
 
 #include "StarisPlayerPawn.generated.h"
 
+class AStarisGameSettings;
+class AGalaxy;
 class USpringArmComponent;
 class UCameraComponent;
 
@@ -24,7 +26,10 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UFUNCTION(BlueprintCallable)
 	void MoveToTarget(USceneComponent* Target, bool Track);
+
+	UFUNCTION(BlueprintCallable)
 	void MoveToLocation(const FVector& Location);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -56,6 +61,12 @@ private:
 	float DesiredYaw;
 	float DesiredCamDist;
 
-	float MinCamDist = 1000;
-	float MaxCamDist = 50000;
+	float StarScale = 1.0f;
+	float StarScaleCached = 1.0f;
+
+	UPROPERTY()
+	AGalaxy* Galaxy;
+
+	UPROPERTY()
+	AStarisGameSettings* GameSettings;
 };

@@ -9,18 +9,20 @@
 
 #include "Planet.generated.h"
 
+class UEmpire;
 class UColony;
-class UGenericToolTip;
+class UToolTip;
 class AGalaxy;
-class ASystem;
+class USystem;
 class USceneComponent;
+class UMeshInstanceRef;
 
-UCLASS()
-class STARIS_API UPlanet : public UStaticMeshComponent, public ICelestialEntity, public IFocusable
+UCLASS(BlueprintType)
+class STARIS_API UPlanet : public UObject, public ICelestialEntity, public IFocusable
 {
 	GENERATED_BODY()
 
-	friend ASystem;
+	friend USystem;
 
 public:
 	UPlanet();
@@ -28,17 +30,35 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
 	void ApplyPattern(const FPlanetMetaData& Data);
 
-	virtual void OnDayPassed(int32 Day) override;
+	UColony* SettleColony();
+	UColony* GetColony() const { return Colony; }
 
-	virtual UToolTip* CreateToolTip() override;
+	virtual void OnMonthPassed(int32 Month) override;
+
 	virtual void SetupToolTip(UToolTip* ToolTip) override;
 
-	FText GetTitle() const { return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(Title); }
-	const FName& GetId() const { return Id; }
-	ASystem* GetSystem() const { return System.Get(); }
+	virtual TArray<UContextMenuItem*> CreateContextActionsHovered(IFocusable* Selected) override;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UColony* Colony;
+	virtual void OnSelected() override;
+	
+	UFUNCTION(BlueprintPure)
+	FText GetTitle() const;
+
+	const FName& GetId() const { return Id; }
+	int32 GetSeed() const { return Seed; }
+	const FVector& GetLocation() const { return Location; }
+	int32 GetTemperature() const { return Temperature; }
+
+	UFUNCTION(BlueprintPure)
+	int32 GetArea() const { return 4 * 3.14 * FMath::Pow((float)Radius, 2); }
+	int32 GetRadius() const { return Radius; }
+	float GetRealRadius() const { return Radius / 12000.0f * 15; }
+
+	const TArray<FPlanetLayer>& GetLayers() const { return Layers; }
+	void AddTileToLayer(int32 Layer, UCompositeRecord* ResourceType);
+
+	UFUNCTION(BlueprintPure)
+	USystem* GetSystem() const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Title;
@@ -55,16 +75,24 @@ private:
 	FName Id;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
-	FName Biome;
+	int32 Seed;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
-	int32 TemperatureDay;
-	
+	UMeshInstanceRef* MeshInstance;
+
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
-	int32 TemperatureNight;
+	FVector Location;
 
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<UGenericToolTip> ToolTipClass;
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	int32 Temperature;
 
-	TWeakObjectPtr<ASystem> System;
+	// Radius in kilometers
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	int32 Radius;
+
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	TArray<FPlanetLayer> Layers;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(AllowPrivateAccess))
+	UColony* Colony;
 };

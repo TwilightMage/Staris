@@ -2,3 +2,11 @@
 
 
 #include "Game/StarisHUD.h"
+
+#include "StarisStatics.h"
+#include "UI/ResourcePanel.h"
+
+void AStarisHUD::BeginPlay()
+{
+	Super::BeginPlay();
+}

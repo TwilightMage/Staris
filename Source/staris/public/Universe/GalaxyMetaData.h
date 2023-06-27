@@ -8,22 +8,6 @@
 class UCompositeRecord;
 
 USTRUCT(BlueprintType)
-struct FPlanetRegionMetadata
-{
-	GENERATED_BODY()
-
-	inline const static FName Type_City = "city";
-	inline const static FName Type_Agrarian = "agrarian";
-	inline const static FName Type_Industrial = "industrial";
-	
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	TSet<FName> AllowedTypes;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FName BuildedType;
-};
-
-USTRUCT(BlueprintType)
 struct FStarMetaData
 {
 	GENERATED_BODY()
@@ -35,6 +19,9 @@ struct FStarMetaData
 	
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FName Id;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	int32 Seed;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString Title;
@@ -52,25 +39,27 @@ struct FStarMetaData
 };
 
 USTRUCT(BlueprintType)
-struct FPlanetMetaData
+struct FPlanetLayer
 {
 	GENERATED_BODY()
 
-	inline const static FName BIOME_Desert = "desert";
-	inline const static FName BIOME_Forest = "forest";
-	inline const static FName BIOME_Arctic = "arctic";
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<UCompositeRecord*> ResourceTiles;
+};
+
+USTRUCT(BlueprintType)
+struct FPlanetMetaData
+{
+	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FName Id;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	FName Biome;
+	int32 Seed;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	int32 TemperatureMin;
-
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	int32 TemperatureMax;
+	int32 Temperature;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	float Scale;
@@ -88,7 +77,7 @@ struct FPlanetMetaData
 	float OrbitSpeed;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	TArray<FPlanetRegionMetadata> Regions;
+	TArray<FPlanetLayer> Layers;
 };
 
 USTRUCT(BlueprintType)
@@ -98,6 +87,9 @@ struct FSystemMetaData
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FName Id;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	int32 Seed;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FString Title;
@@ -119,6 +111,9 @@ struct FGalaxyMetaData
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	FName Id;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	int32 Seed;
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	TArray<FSystemMetaData> Systems;

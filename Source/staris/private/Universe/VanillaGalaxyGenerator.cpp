@@ -3,6 +3,9 @@
 
 #include "Universe/VanillaGalaxyGenerator.h"
 
+#include "StarisStatics.h"
+#include "Empire/VanillaResourceTypeProperties.h"
+#include "Game/StarisGameInstance.h"
 #include "Internationalization/StringTableCore.h"
 #include "Internationalization/StringTableRegistry.h"
 #include "Universe/CompositeDatabase.h"
@@ -40,12 +43,14 @@ T GetRandomArrayItem(const TArray<T>& Container, FRandomStream& Random) { return
 
 void UVanillaGalaxyGenerator::GenerateGalaxy(FGalaxyMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
 {
-	if (auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
+	if (const auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
 	{
-		auto VanillaContext = Context->GetOrCreateComponent<UVanillaGalaxyGeneratorContext>();
+		// Fetch and setup vanilla generator context
+		const auto VanillaContext = Context->GetOrCreateComponent<UVanillaGalaxyGeneratorContext>();
 		VanillaContext->CurrentGalaxy = &Data;
-		
-		FStringTableConstPtr StringTable = FStringTableRegistry::Get().FindStringTable("StarNames");
+
+		// Fill pool with star names
+		const FStringTableConstPtr StringTable = FStringTableRegistry::Get().FindStringTable("StarNames");
 		if (StringTable.IsValid())
 		{
 			StringTable->EnumerateSourceStrings([&](const FString& InKey, const FString& InSourceString) -> bool
@@ -54,34 +59,64 @@ void UVanillaGalaxyGenerator::GenerateGalaxy(FGalaxyMetaData& Data, int32 SubSee
 				return true;
 			});
 		}
-		
-		auto Seed = Settings->Seed * SubSeed;
-		
+
+		// Cache mineral resource types
+		for (auto ResourceType : GameInstance->GetResourceTypeDatabase()->GetAllRecords())
+		{
+			auto VanillaResourceProps = ResourceType.Value->GetOrCreateComponent<UVanillaResourceTypeProperties>();
+			if (!VanillaResourceProps->MineralDensityPerLayer.IsEmpty())
+			{
+				VanillaContext->MineralResourceTypes.Add({
+					ResourceType.Value,
+					VanillaResourceProps
+				});
+			}
+		}
+
+		// Setup star type distribution
+		for (auto& DistributionEntry : Settings->StarTypeDistribution)
+		{
+			VanillaContext->StarTypeDistribution.AddDistribution(GameInstance->GetStarTypeDatabase()->GetOrCreateRecord(DistributionEntry.Key), DistributionEntry.Value);
+		}
+
+		// Setup star count per system distribution
+		VanillaContext->StarCountDistribution = FRandomDistribution(Settings->StarCountDistribution);
+
+		// Setup random stream for current galaxy
+		const auto Seed = Settings->Seed * SubSeed;
 		FRandomStream Random(Seed);
 
+		// Fill in properties
+		Data.Seed = SubSeed;
 		Data.Id = GenerateId(Seed, VanillaContext->UsedIDs);
 		Data.Systems.SetNum(Settings->SystemCount);
 
+		// Generate systems
 		for (auto& System : Data.Systems)
 		{
 			GenerateSystem(System, Random.FRand() * MAX_int32, SettingsManager, Context);
 		}
+
+		VanillaContext->CurrentGalaxy = nullptr;
 	}
 }
 
 void UVanillaGalaxyGenerator::GenerateSystem(FSystemMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
 {
-	if (auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
+	if (const auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
 	{
-		auto VanillaContext = Context->GetOrCreateComponent<UVanillaGalaxyGeneratorContext>();
+		// Fetch and setup vanilla generator context
+		const auto VanillaContext = Context->GetOrCreateComponent<UVanillaGalaxyGeneratorContext>();
 		VanillaContext->CurrentSystem = &Data;
-		
-		auto Seed = Settings->Seed * SubSeed;
-		
+
+		// Setup random stream for current system
+		const auto Seed = Settings->Seed * SubSeed;
 		FRandomStream Random(Seed);
 
-		VanillaContext->IsBlackHole = Random.FRand() < 0.1;
+		// Make current system black hole by a chance
+		VanillaContext->IsBlackHole = Random.FRand() < Settings->BlackHoleChance;
 
+		// Pick name for current system
 		if (!VanillaContext->AvailableStarNames.IsEmpty())
 		{
 			auto UsedStarName = GetRandomArrayItem(VanillaContext->AvailableStarNames, Random);
@@ -89,17 +124,92 @@ void UVanillaGalaxyGenerator::GenerateSystem(FSystemMetaData& Data, int32 SubSee
 			Data.Title = FText::FromStringTable("StarNames", UsedStarName, EStringTableLoadingPolicy::FindOrFullyLoad).ToString();
 		}
 
+		// Fill in properties
 		Data.Id = GenerateId(Seed, VanillaContext->UsedIDs);
-		Data.Stars.SetNum(1);
-		Data.Planets.SetNum(VanillaContext->IsBlackHole ? 0 : Random.RandRange(3, 7));
+		Data.Seed = SubSeed;
+		Data.Stars.SetNum(VanillaContext->IsBlackHole ? 1 : VanillaContext->StarCountDistribution.PickRandomFromStream(Random));
+		Data.Planets.SetNum(VanillaContext->IsBlackHole ? 0 : Random.RandRange(Settings->PlanetAmountRange.Min, Settings->PlanetAmountRange.Max));
 
-		float Angle = Random.FRand();
+		// Pick location for current system
+
+		/*float Angle = Random.FRand();
 		float Dist = Random.FRand();
-
 		Dist += FMath::Cos(Dist * 3.14) * 0.1;
-
-		Data.Location = FVector(FMath::Sin(3.14 * 2 * Angle) * 50000 * Dist, FMath::Cos(3.14 * 2 * Angle) * 50000 * Dist, Random.FRand() * 1000 - 500) * 5;
+		Data.Location = FVector(FMath::Sin(3.14 * 2 * Angle) * 50000 * Dist, FMath::Cos(3.14 * 2 * Angle) * 50000 * Dist, Random.FRand() * 1000 - 500) * 5;*/
 		
+		if (Settings->SystemDistributionMap)
+		{
+			auto& Mip = Settings->SystemDistributionMap->PlatformData->Mips[0];
+			FByteBulkData& RawImageData = Mip.BulkData;
+			FColor* FormatedImageData = static_cast<FColor*>(RawImageData.Lock(LOCK_READ_ONLY));
+		
+			bool PositionOk = false;
+			while (true)
+			{
+				FVector PosAlpha = FVector(Random.FRand(), Random.FRand(), Random.FRand());
+				FColor PixelColor = FormatedImageData[(int32)(Mip.SizeY * PosAlpha.Y) * Mip.SizeX + (int32)(Mip.SizeX * PosAlpha.X)];
+				
+				float Chance = PixelColor.R / (float)MAX_uint8;
+				if (Random.FRand() < Chance)
+				{
+					Data.Location = FVector(
+						-Settings->GalaxyRadius + Settings->GalaxyRadius * 2 * PosAlpha.X,
+						-Settings->GalaxyRadius + Settings->GalaxyRadius * 2 * PosAlpha.Y,
+						-Settings->GalaxyHeight / 2 + Settings->GalaxyHeight * PosAlpha.Z
+					);
+					
+					break;
+				}
+			}
+
+			RawImageData.Unlock();
+		}
+		else
+		{
+			Data.Location = FVector(
+				-Settings->GalaxyRadius + Settings->GalaxyRadius * 2 * Random.FRand(),
+				-Settings->GalaxyRadius + Settings->GalaxyRadius * 2 * Random.FRand(),
+				-Settings->GalaxyHeight / 2 + Settings->GalaxyHeight * Random.FRand()
+			);
+		}
+
+		//// Rearrange our planet orbits
+		//if (!Data.Planets.IsEmpty())
+		//{
+		//	for (int32 i = 1; i < Data.Planets.Num(); i++)
+		//	{
+		//		for (int32 j = i - 1; j >= 0; --j)
+		//		{
+		//			if (Data.Planets[j + 1].OrbitDistance < Data.Planets[j].OrbitDistance)
+		//			{
+		//				Swap(Data.Planets[j + 1], Data.Planets[j]);
+		//			}
+		//		}
+		//	}
+		//	
+		//	for (int32 i = 0; i < 10; i++)
+		//	{
+		//		TArray<float> Offsets;
+		//		Offsets.SetNumZeroed(Data.Planets.Num());
+		//
+		//		for (int32 j = 0; j < Data.Planets.Num() - 1; j++)
+		//		{
+		//			Offsets[j] +=  Data.Planets[j + 1].OrbitDistance - Data.Planets[j].OrbitDistance;
+		//		}
+		//
+		//		for (int32 j = 1; j < Data.Planets.Num(); j++)
+		//		{
+		//			Offsets[j] -=  Data.Planets[j].OrbitDistance - Data.Planets[j - 1].OrbitDistance;
+		//		}
+		//
+		//		for (int32 j = 0; j < Data.Planets.Num(); j++)
+		//		{
+		//			Data.Planets[j].OrbitDistance += Offsets[j] * 0.05;
+		//		}
+		//	}
+		//}
+
+		// Generate stars in current system
 		VanillaContext->CurrentStarIndex = 0;
 		for (auto& Star : Data.Stars)
 		{
@@ -107,6 +217,7 @@ void UVanillaGalaxyGenerator::GenerateSystem(FSystemMetaData& Data, int32 SubSee
 			VanillaContext->CurrentStarIndex++;
 		}
 
+		// Generate planets in current system
 		VanillaContext->CurrentPlanetIndex = 0;
 		for (auto& Planet : Data.Planets)
 		{
@@ -114,40 +225,7 @@ void UVanillaGalaxyGenerator::GenerateSystem(FSystemMetaData& Data, int32 SubSee
 			VanillaContext->CurrentPlanetIndex++;
 		}
 
-		if (!Data.Planets.IsEmpty())
-		{
-			for (int32 i = 1; i < Data.Planets.Num(); i++)
-			{
-				for (int32 j = i - 1; j >= 0; --j)
-				{
-					if (Data.Planets[j + 1].OrbitDistance < Data.Planets[j].OrbitDistance)
-					{
-						Swap(Data.Planets[j + 1], Data.Planets[j]);
-					}
-				}
-			}
-			
-			for (int32 i = 0; i < 10; i++)
-			{
-				TArray<float> Offsets;
-				Offsets.SetNumZeroed(Data.Planets.Num());
-
-				for (int32 j = 0; j < Data.Planets.Num() - 1; j++)
-				{
-					Offsets[j] +=  Data.Planets[j + 1].OrbitDistance - Data.Planets[j].OrbitDistance;
-				}
-
-				for (int32 j = 1; j < Data.Planets.Num(); j++)
-				{
-					Offsets[j] -=  Data.Planets[j].OrbitDistance - Data.Planets[j - 1].OrbitDistance;
-				}
-
-				for (int32 j = 0; j < Data.Planets.Num(); j++)
-				{
-					Data.Planets[j].OrbitDistance += Offsets[j] * 0.05;
-				}
-			}
-		}
+		VanillaContext->CurrentSystem = nullptr;
 	}
 }
 
@@ -159,18 +237,12 @@ void UVanillaGalaxyGenerator::GenerateStar(FStarMetaData& Data, int32 SubSeed, A
 		VanillaContext->CurrentStar = &Data;
 		
 		auto Seed = Settings->Seed * SubSeed;
-		
-		const static TSet<FName> StarTypes = {
-			FStarMetaData::TYPE_Blue,
-			FStarMetaData::TYPE_Red,
-			FStarMetaData::TYPE_Yellow
-		};
 
 		FRandomStream Random(Seed);
 
 		if (VanillaContext->CurrentSystem)
 		{
-			if (VanillaContext->CurrentSystem->Stars.Num() > 1 || true)
+			if (VanillaContext->CurrentSystem->Stars.Num() > 1)
 			{
 				Data.Title = VanillaContext->CurrentSystem->Title + "-" + GetLetterName(VanillaContext->CurrentStarIndex);
 			}
@@ -179,76 +251,103 @@ void UVanillaGalaxyGenerator::GenerateStar(FStarMetaData& Data, int32 SubSeed, A
 				Data.Title = VanillaContext->CurrentSystem->Title;
 			}
 		}
+		
 		Data.Id = GenerateId(Seed, VanillaContext->UsedIDs);
+		Data.Seed = SubSeed;
 
-		if (VanillaContext->IsBlackHole) Data.Type = StarTypeDatabase->GetOrCreateRecord(FStarMetaData::TYPE_Black_Hole);
-		else Data.Type = StarTypeDatabase->GetOrCreateRecord(GetRandomSetItem(StarTypes, Random));
+		if (VanillaContext->IsBlackHole) Data.Type = GameInstance->GetStarTypeDatabase()->GetOrCreateRecord(FStarMetaData::TYPE_Black_Hole);
+		else Data.Type = VanillaContext->StarTypeDistribution.PickRandomFromStream(Random);
 
-		Data.Location = FVector::Zero();
+		if (VanillaContext->CurrentSystem->Stars.Num() == 1)
+		{
+			Data.Location = FVector::Zero();
+		}
+		else
+		{
+			float Angle = (VanillaContext->CurrentStarIndex / (float)VanillaContext->CurrentSystem->Stars.Num()) * (3.14 * 2);
+			Data.Location = FVector(FMath::Cos(Angle), FMath::Sin(Angle), 0) * 70;
+		}
 		Data.Scale = Random.FRandRange(0.5, 1.0);
+
+		VanillaContext->CurrentStar = nullptr;
 	}
 }
 
 void UVanillaGalaxyGenerator::GeneratePlanet(FPlanetMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
 {
-	const float OrbitRange = 2000;
-	const float OrbitOffset = 300;
-	
 	if (auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
 	{
 		auto VanillaContext = Context->GetOrCreateComponent<UVanillaGalaxyGeneratorContext>();
 		VanillaContext->CurrentPlanet = &Data;
 		
 		auto Seed = Settings->Seed * SubSeed;
-		
-		const static TSet<FName> PlanetBiomes = {
-			FPlanetMetaData::BIOME_Desert,
-			FPlanetMetaData::BIOME_Forest,
-			FPlanetMetaData::BIOME_Arctic
-		};
 
 		FRandomStream Random(Seed);
 
 		Data.Id = GenerateId(Seed, VanillaContext->UsedIDs);
-		Data.Biome = GetRandomSetItem(PlanetBiomes, Random);
-		Data.Regions.SetNum(Random.RandRange(10, 20));
+		Data.Seed = SubSeed;
+		Data.Layers.SetNum(Settings->LayerNum);
 		Data.Scale = Random.FRandRange(0.5, 1.0);
 		Data.OrbitOffset = Random.FRand();
 		Data.OrbitPoint = FVector::Zero();
 		Data.OrbitSpeed = Random.FRandRange(0.5, 2.0);
-		
-		const float Orbit = Random.FRandRange(0, OrbitRange);
-		Data.OrbitDistance = OrbitOffset + Orbit;
 
-		const int32 TemperatureRange = Random.RandRange(20, 100);
-		const int32 TemperatureOffset = (1 - (Orbit / OrbitRange)) * 800 - 400;
-		Data.TemperatureMin = TemperatureOffset - TemperatureRange / 2;
-		Data.TemperatureMax = TemperatureOffset + TemperatureRange / 2;
+		float OrbitAlphaStep = 1 / (float)Settings->PlanetAmountRange.Max;
+		float OrbitAlpha = OrbitAlphaStep * VanillaContext->CurrentPlanetIndex + OrbitAlphaStep * (Random.FRand() * 0.2f - 0.1f);
+		Data.OrbitDistance = FMath::Lerp(Settings->PlanetOrbitRange.Min, Settings->PlanetOrbitRange.Max, OrbitAlpha);
 
-		for (auto& Region : Data.Regions)
+		const int32 TemperatureOffset = FMath::Lerp(Settings->TemperatureGlobalRange.Max, Settings->TemperatureGlobalRange.Min, OrbitAlpha);
+		Data.Temperature = TemperatureOffset + Settings->TemperatureRandomSpread * (Random.FRand() * 2 - 1);
+
+		VanillaContext->PlanetMineralDistribution = {};
+		for (auto& Mineral : VanillaContext->MineralResourceTypes)
 		{
-			GeneratePlanetRegion(Region, Random.FRand() * MAX_int32, SettingsManager, Context);
+			VanillaContext->PlanetMineralDistribution.Add({
+				Mineral.Record,
+				Mineral.VanillaProps,
+				Random.FRand() * 2
+			});
 		}
+		VanillaContext->PlanetMineralDistribution.Add({nullptr, nullptr, 1});
+
+		VanillaContext->CurrentPlanetLayerIndex = 0;
+		for (auto& PlanetLayer : Data.Layers)
+		{
+			GeneratePlanetLayer(PlanetLayer, Random.FRand() * MAX_int32, SettingsManager, Context);
+			VanillaContext->CurrentPlanetLayerIndex++;
+		}
+
+		VanillaContext->CurrentPlanet = nullptr;
 	}
 }
 
-void UVanillaGalaxyGenerator::GeneratePlanetRegion(FPlanetRegionMetadata& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
+void UVanillaGalaxyGenerator::GeneratePlanetLayer(FPlanetLayer& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
 {
 	if (auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
 	{
-		auto Seed = Settings->Seed * SubSeed;
+		auto VanillaContext = Context->GetOrCreateComponent<UVanillaGalaxyGeneratorContext>();
 		
-		const static TSet<FName> RegionTypes = {
-			FPlanetRegionMetadata::Type_Agrarian,
-			FPlanetRegionMetadata::Type_City,
-			FPlanetRegionMetadata::Type_Industrial
-		};
-	
+		auto Seed = Settings->Seed * SubSeed;
 		FRandomStream Random(Seed);
 
-		for (const auto& Type : RegionTypes)
+		int32 LayerSize = VanillaContext->CurrentPlanet->Scale * Settings->LayerSize;
+		Data.ResourceTiles.Reserve(LayerSize);
+		FRandomDistribution<UCompositeRecord*> LayerMineralDistribution;
+		for (int32 i = 0; i < VanillaContext->PlanetMineralDistribution.Num(); i++)
 		{
-			if (Random.FRand() > 0.5) Data.AllowedTypes.Add(Type);
+			auto& Mineral = VanillaContext->PlanetMineralDistribution[i];
+			
+			if (Mineral.VanillaProps && VanillaContext->CurrentPlanetLayerIndex >= Mineral.VanillaProps->MineralDensityPerLayer.Num()) continue;
+			
+			LayerMineralDistribution.AddDistribution(Mineral.Record, Mineral.Density * (Mineral.VanillaProps ? Mineral.VanillaProps->MineralDensityPerLayer[VanillaContext->CurrentPlanetLayerIndex] : 1));
+		}
+
+		for (int32 i = 0; i < LayerSize; i++)
+		{
+			if (auto Resource = LayerMineralDistribution.PickRandomFromStream(Random))
+			{
+				Data.ResourceTiles.Add(Resource);
+			}
 		}
 	}
 }

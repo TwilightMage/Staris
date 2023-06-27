@@ -16,8 +16,11 @@ class STARIS_API UVanillaResourceTypeProperties : public UResourceTypeProperties
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UTexture* Icon;
+	UTexture2D* Icon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText Title;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<float> MineralDensityPerLayer;
 };

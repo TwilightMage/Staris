@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+
 #include "ToolTip.generated.h"
 
 /**
@@ -13,4 +14,8 @@ UCLASS()
 class STARIS_API UToolTip : public UUserWidget
 {
 	GENERATED_BODY()
+
+public:
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void AddLine(const FText& Line);
 };
