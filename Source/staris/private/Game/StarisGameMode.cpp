@@ -4,15 +4,13 @@
 #include "Game/StarisGameMode.h"
 
 #include "JsonObjectConverter.h"
-#include "StarisStatics.h"
 #include "Empire/Empire.h"
 #include "Empire/Race.h"
 #include "Empire/UnitedEmpireGenerator.h"
-#include "Game/StarisGameInstance.h"
 #include "Game/StarisPlayerController.h"
 #include "Game/StarisPlayerPawn.h"
 #include "GenericPlatform/GenericPlatformHttp.h"
-#include "Misc/DefaultValueHelper.h"
+#include "UI/SettingsPanel.h"
 #include "Universe/Galaxy.h"
 #include "Universe/GalaxySettingsManager.h"
 #include "Universe/VanillaGalaxySettings.h"
@@ -50,36 +48,14 @@ FString AStarisGameMode::InitNewPlayer(APlayerController* NewPlayerController, c
 	return Super::InitNewPlayer(NewPlayerController, UniqueId, Options, Portal);
 }
 
-#define TRY_SET_GALAXY_NUMBER(Param) if (GalaxySettings.JsonObject->HasTypedField<EJson::Number>(#Param)) VanillaGalaxySettings->Param = GalaxySettings.JsonObject->GetNumberField(#Param);
-
-#define TRY_SET_GALAXY_MAP(Param, PairKey, ValueType)                                                           \
-if (GalaxySettings.JsonObject->HasTypedField<EJson::Object>(#Param))                                            \
-{                                                                                                               \
-	VanillaGalaxySettings->Param.Reset();                                                                       \
-	auto Obj = GalaxySettings.JsonObject->GetObjectField(#Param);                                               \
-	for (auto Pair : Obj->Values)                                                                               \
-	{                                                                                                           \
-		VanillaGalaxySettings->Param.Add(PairKey, Pair.Value->As##ValueType());                                 \
-	}                                                                                                           \
-}                                                                                                               \
-
-#define TRY_SET_GALAXY_STRUCT(Param, StructType) \
-if (GalaxySettings.JsonObject->HasTypedField<EJson::Object>(#Param))                                                                                                                     \
-{                                                                                                                                                                                                     \
-	FJsonObjectConverter::JsonObjectToUStruct(GalaxySettings.JsonObject->GetObjectField(#Param).ToSharedRef(), StructType::StaticStruct(), &VanillaGalaxySettings->Param); \
-}                                                                                                                                                                                                     \
-
-int32 ParseInt(const FString& Str) { int32 Result; return (FDefaultValueHelper::ParseInt(Str, Result)) ? Result : 0; }
-
 void AStarisGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
 {
 	Super::InitGame(MapName, Options, ErrorMessage);
 
 	FString GalaxySettingsParam = FGenericPlatformHttp::GetUrlParameter(Options, FString("GalaxySettings")).Get("");
+	FString EmpireSettingsParam = FGenericPlatformHttp::GetUrlParameter(Options, FString("EmpireSettings")).Get("");
 
-	AGalaxySettingsManager* GalaxySettingsManager = GetActorOfClass<AGalaxySettingsManager>(this);
-
-	GalaxySettingsManager = GetWorld()->SpawnActor<AGalaxySettingsManager>();
+	AGalaxySettingsManager* GalaxySettingsManager = GetWorld()->SpawnActor<AGalaxySettingsManager>();
 	
 	if (!GalaxySettingsParam.IsEmpty())
 	{
@@ -88,21 +64,33 @@ void AStarisGameMode::InitGame(const FString& MapName, const FString& Options, F
 
 		GalaxySettingsManager->UpdateSettingsSet();
 
-		auto VanillaGalaxySettings = GalaxySettingsManager->GetSettings<UVanillaGalaxySettings>();
-		TRY_SET_GALAXY_NUMBER(Seed);
-		TRY_SET_GALAXY_NUMBER(SystemCount);
-		TRY_SET_GALAXY_NUMBER(GalaxyRadius);
-		VanillaGalaxySettings->GalaxyHeight = 0;
-		VanillaGalaxySettings->SystemDistributionMap = UVanillaGalaxySettings::GalaxyMask;
-		TRY_SET_GALAXY_MAP(StarCountDistribution, ParseInt(Pair.Key), Number);
-		TRY_SET_GALAXY_STRUCT(PlanetAmountRange, FMinMaxInt32);
-		TRY_SET_GALAXY_STRUCT(PlanetOrbitRange, FMinMaxFloat);
-		TRY_SET_GALAXY_STRUCT(TemperatureGlobalRange, FMinMaxInt32);
-		TRY_SET_GALAXY_NUMBER(TemperatureRandomSpread);
-		TRY_SET_GALAXY_NUMBER(LayerNum);
-		TRY_SET_GALAXY_NUMBER(LayerSize);
-		TRY_SET_GALAXY_NUMBER(BlackHoleChance);
-		TRY_SET_GALAXY_MAP(StarTypeDistribution, FName(Pair.Key), Number);
+		if (auto VanillaGalaxySettingsJson = GalaxySettings.JsonObject->Values.FindRef(UVanillaGalaxySettings::StaticClass()->GetClassPathName().ToString()))
+		{
+			auto Data = VanillaGalaxySettingsJson->AsObject();
+			auto VanillaGalaxySettings = GalaxySettingsManager->GetSettings<UVanillaGalaxySettings>();
+			VanillaGalaxySettings->GalaxyHeight = 0;
+			VanillaGalaxySettings->SystemDistributionMap = UVanillaGalaxySettings::SavedMask;
+			TRY_READ_SETTINGS_NUMBER(Data, "Seed",                    VanillaGalaxySettings->Seed);
+			TRY_READ_SETTINGS_NUMBER(Data, "SystemCount",             VanillaGalaxySettings->SystemCount);
+			TRY_READ_SETTINGS_NUMBER(Data, "GalaxyRadius",            VanillaGalaxySettings->GalaxyRadius);
+			TRY_READ_SETTINGS_MAP(   Data, "StarCountDistribution",   VanillaGalaxySettings->StarCountDistribution, ParseInt(Pair.Key), Number);
+			TRY_READ_SETTINGS_STRUCT(Data, "PlanetAmountRange",       VanillaGalaxySettings->PlanetAmountRange, FMinMaxInt32);
+			TRY_READ_SETTINGS_STRUCT(Data, "PlanetOrbitRange",        VanillaGalaxySettings->PlanetOrbitRange, FMinMaxFloat);
+			TRY_READ_SETTINGS_STRUCT(Data, "TemperatureGlobalRange",  VanillaGalaxySettings->TemperatureGlobalRange, FMinMaxInt32);
+			TRY_READ_SETTINGS_NUMBER(Data, "TemperatureRandomSpread", VanillaGalaxySettings->TemperatureRandomSpread);
+			TRY_READ_SETTINGS_NUMBER(Data, "LayerNum",                VanillaGalaxySettings->LayerNum);
+			TRY_READ_SETTINGS_NUMBER(Data, "LayerSize",               VanillaGalaxySettings->LayerSize);
+			TRY_READ_SETTINGS_NUMBER(Data, "BlackHoleChance",         VanillaGalaxySettings->BlackHoleChance);
+			TRY_READ_SETTINGS_MAP(   Data, "StarTypeDistribution",    VanillaGalaxySettings->StarTypeDistribution, FName(Pair.Key), Number);
+		}
+	}
+
+	if (!EmpireSettingsParam.IsEmpty())
+	{
+		FJsonObjectWrapper EmpireSettings;
+		EmpireSettings.JsonObjectFromString(FGenericPlatformHttp::UrlDecode(EmpireSettingsParam));
+
+		EmpireGeneratorSettings = EmpireSettings.JsonObject;
 	}
 }
 
@@ -130,14 +118,16 @@ void AStarisGameMode::Setup()
 		Galaxy->OnGameStarted.AddUObject(this, &AStarisGameMode::GameStarted);
 
 		auto EmpireGenerator = NewObject<UUnitedEmpireGenerator>();
-		EmpireGenerator->EmpireTitle = "Great Foxik Empire";
-		EmpireGenerator->SystemTitle = "Solus";
-		EmpireGenerator->CapitalTitle = "Terra";
+		TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "EmpireTitle", EmpireGenerator->EmpireTitle);
+		TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "SystemTitle", EmpireGenerator->SystemTitle);
+		TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "CapitalTitle", EmpireGenerator->CapitalTitle);
 		auto EmpireRace = NewObject<URace>();
-		EmpireRace->Title = "Foxus";
+		TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "FounderRace", EmpireRace->Title);
 		EmpireGenerator->EmpireRaces = { EmpireRace };
-		EmpireGenerator->TotalPops = 8000000;
-		Empires.Add(EmpireGenerator->Generate(Galaxy, 123));
+		TRY_READ_SETTINGS_NUMBER(EmpireGeneratorSettings, "DesiredPopulation", EmpireGenerator->TotalPops);
+		int32 EmpireSeed = 0;
+		TRY_READ_SETTINGS_NUMBER(EmpireGeneratorSettings, "Seed", EmpireSeed);
+		Empires.Add(EmpireGenerator->Generate(Galaxy, EmpireSeed));
 	}
 	
 	SetupDone = true;

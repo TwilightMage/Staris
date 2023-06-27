@@ -139,9 +139,9 @@ void UVanillaGalaxyGenerator::GenerateSystem(FSystemMetaData& Data, int32 SubSee
 		
 		if (Settings->SystemDistributionMap)
 		{
-			auto& Mip = Settings->SystemDistributionMap->PlatformData->Mips[0];
-			FByteBulkData& RawImageData = Mip.BulkData;
-			FColor* FormatedImageData = static_cast<FColor*>(RawImageData.Lock(LOCK_READ_ONLY));
+			auto& Mip = Settings->SystemDistributionMap->GetPlatformData()->Mips[0];
+			const FByteBulkData& RawImageData = Mip.BulkData;
+			const FColor* FormatedImageData = static_cast<const FColor*>(RawImageData.LockReadOnly());
 		
 			bool PositionOk = false;
 			while (true)

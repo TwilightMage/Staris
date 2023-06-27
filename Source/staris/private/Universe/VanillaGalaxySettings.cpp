@@ -14,27 +14,51 @@ void UVanillaGalaxySettings::FillSettingsPanel(USettingsPanel* SettingsPanel, co
 	SETTINGS_FIELD_SEED(Seed);
 	SETTINGS_FIELD_NUMBER("VanillaGalaxySettings", "System Count", true, true, 1, false, 0, 1000, "", int32, SystemCount);
 	SETTINGS_FIELD_NUMBER("VanillaGalaxySettings", "Radius", false, true, 100000, false, 0, 1500000, "", float, GalaxyRadius);
-	SETTINGS_FIELD_SELECT_CUSTOM("VanillaGalaxySettings", "Shape", "Spiral", SETTINGS_FIELD_SELECT_ITEMS("Spiral", "Clouds", "Crescent", "Torus", "Webbed Torus", "None", "Custom..."), FSettingsPanelSelectCallbackNative::CreateLambda([&](const FString& Value)
+	SETTINGS_FIELD_SELECT_CUSTOM("VanillaGalaxySettings", "Shape", "Spiral", SETTINGS_FIELD_SELECT_ITEMS("Spiral", "Clouds", "Crescent", "Torus", "Webbed Torus", "None", "Custom..."), FSettingsPanelSelectCallbackNative::CreateWeakLambda(this, [=](const FString& Value)
 	{
-		Json->SetStringField("Shape", Value);
 		if (Value == "Custom...")
 		{
+			SavedMask = LoadMaskFromComputer();
+		}
+		else
+		{
+			FString Path = "";
+			if (Value == "Spiral")
+			{
+				Path = "/Game/Textures/Galaxy/GalaxyDistribution_uneven_spiral.GalaxyDistribution_uneven_spiral";
+			}
+			else if (Value == "Clouds")
+			{
+				Path = "/Game/Textures/Galaxy/GalaxyDistribution_clouds.GalaxyDistribution_clouds";
+			}
+			else if (Value == "Crescent")
+			{
+				Path = "/Game/Textures/Galaxy/GalaxyDistribution_crescent.GalaxyDistribution_crescent";
+			}
+			else if (Value == "Torus")
+			{
+				Path = "/Game/Textures/Galaxy/GalaxyDistribution_torus.GalaxyDistribution_torus";
+			}
+			else if (Value == "Webbed Torus")
+			{
+				Path = "/Game/Textures/Galaxy/GalaxyDistribution.GalaxyDistribution";
+			}
 			
+			SavedMask = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), NULL, *Path));
 		}
 	}));
-	Json->SetStringField("Shape", "Spiral");
 	
 	SETTINGS_SECTION("VanillaGalaxySettings", "System Settings");
 	//FIELD_MAP_NUMBER_STRING("VanillaGalaxySettings", "Star Count Distribution");
-	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "1 Star Amount", false, true, 0, false, 0, 8, "", float, FSettingsPanelNumberCallbackNative::CreateLambda([&](double Value)
+	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "1 Star Amount", false, true, 0, false, 0, 8, "", float, FSettingsPanelNumberCallbackNative::CreateWeakLambda(this, [=](double Value)
 	{
 		Json->GetObjectField("StarCountDistribution")->SetNumberField("1", (float)Value);
 	}));
-	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "2 Star Amount", false, true, 0, false, 0, 1.5, "", float, FSettingsPanelNumberCallbackNative::CreateLambda([&](double Value)
+	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "2 Star Amount", false, true, 0, false, 0, 1.5, "", float, FSettingsPanelNumberCallbackNative::CreateWeakLambda(this, [=](double Value)
 	{
 		Json->GetObjectField("StarCountDistribution")->SetNumberField("2", (float)Value);
 	}));
-	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "3 Star Amount", false, true, 0, false, 0, 0.5, "", float, FSettingsPanelNumberCallbackNative::CreateLambda([&](double Value)
+	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "3 Star Amount", false, true, 0, false, 0, 0.5, "", float, FSettingsPanelNumberCallbackNative::CreateWeakLambda(this, [=](double Value)
 	{
 		Json->GetObjectField("StarCountDistribution")->SetNumberField("3", (float)Value);
 	}));
@@ -52,20 +76,20 @@ void UVanillaGalaxySettings::FillSettingsPanel(USettingsPanel* SettingsPanel, co
 	SETTINGS_FIELD_NUMBER("VanillaGalaxySettings", "Layer Size", true, true, 1, false, 0, 15, "", int32, LayerSize);
 
 	SETTINGS_SECTION("VanillaGalaxySettings", "Star Settings");
-	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "Black Hole Chance", true, true, 0, true, 100, 5, "%", float, FSettingsPanelNumberCallbackNative::CreateLambda([&](double Value)
+	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "Black Hole Chance", true, true, 0, true, 100, 5, "%", float, FSettingsPanelNumberCallbackNative::CreateWeakLambda(this, [=](double Value)
 	{
 		Json->SetNumberField("BlackHoleChance", Value * 0.01);
 	}));
 	Json->SetNumberField("BlackHoleChance", 0.05);
-	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "Red Star Amount", false, true, 0, false, 0, 1, "", float, FSettingsPanelNumberCallbackNative::CreateLambda([&](double Value)
+	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "Red Star Amount", false, true, 0, false, 0, 1, "", float, FSettingsPanelNumberCallbackNative::CreateWeakLambda(this, [=](double Value)
 	{
 		Json->GetObjectField("StarTypeDistribution")->SetNumberField("red", (float)Value);
 	}));
-	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "Blue Star Amount", false, true, 0, false, 0, 1, "", float, FSettingsPanelNumberCallbackNative::CreateLambda([&](double Value)
+	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "Blue Star Amount", false, true, 0, false, 0, 1, "", float, FSettingsPanelNumberCallbackNative::CreateWeakLambda(this, [=](double Value)
 	{
 		Json->GetObjectField("StarTypeDistribution")->SetNumberField("blue", (float)Value);
 	}));
-	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "Yellow Star Amount", false, true, 0, false, 0, 1, "", float, FSettingsPanelNumberCallbackNative::CreateLambda([&](double Value)
+	SETTINGS_FIELD_NUMBER_CUSTOM("VanillaGalaxySettings", "Yellow Star Amount", false, true, 0, false, 0, 1, "", float, FSettingsPanelNumberCallbackNative::CreateWeakLambda(this, [=](double Value)
 	{
 		Json->GetObjectField("StarTypeDistribution")->SetNumberField("yellow", (float)Value);
 	}));
@@ -75,30 +99,22 @@ void UVanillaGalaxySettings::FillSettingsPanel(USettingsPanel* SettingsPanel, co
 	Json->GetObjectField("StarTypeDistribution")->SetNumberField("yellow", 1);
 }
 
-void UVanillaGalaxySettings::SaveGalaxyMask(UTexture2D* Mask)
-{
-	GalaxyMask = Mask;
-}
-
 UTexture2D* UVanillaGalaxySettings::LoadMaskFromComputer()
 {
-	//TArray<FString> Files;
-	//if (FDesktopPlatformModule::Get()->OpenFileDialog(nullptr, "Select Galaxy Mask", "", "", "png files (*.png)|*.png", EFileDialogFlags::None, Files))
-	//{
-	//	TArray64<uint8> Buffer;
-	//	if (FFileHelper::LoadFileToArray(Buffer, *Files[0]))
-	//	{
-	//		
-	//	}
-	//	FMaterialUtilities::CreateTexture(GetTransientPackage(), "/GalaxyMask/" + Files[0].Replace(TEXT("/"), TEXT("_")), )
-	//	auto Texture = FImageUtils::ImportFileAsTexture2D(Files[0]);
-	//	Texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-	//	Texture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
-	//	Texture->SRGB = false;
-	//	Texture->RefreshSamplerStates();
-    //
-	//	return Texture;
-	//}
+	TArray<FString> Files;
+	if (FDesktopPlatformModule::Get()->OpenFileDialog(GEngine->GameViewport->GetWindow()->GetNativeWindow()->GetOSWindowHandle(), "Select Galaxy Mask", "", "", "png files (*.png)|*.png", EFileDialogFlags::None, Files))
+	{
+		auto Texture = FImageUtils::ImportFileAsTexture2D(Files[0]);
+		Texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+		Texture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+		Texture->SRGB = false;
+		
+		Texture->UpdateResource();
+
+		Texture->AddToRoot();
+    
+		return Texture;
+	}
 
 	return nullptr;
 }

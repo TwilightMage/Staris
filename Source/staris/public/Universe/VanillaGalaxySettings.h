@@ -41,11 +41,6 @@ public:
 	virtual void FillSettingsPanel(USettingsPanel* SettingsPanel, const TSharedPtr<FJsonObject>& Json) override;
 	
 	UFUNCTION(BlueprintCallable)
-	static void SaveGalaxyMask(UTexture2D* Mask);
-	
-	inline static UTexture2D* GalaxyMask = nullptr;
-	
-	UFUNCTION(BlueprintCallable)
 	static UTexture2D* LoadMaskFromComputer();
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Galaxy)
@@ -97,4 +92,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Star)
 	float BlackHoleChance = 0.1;
+
+	inline static UTexture2D* SavedMask;
+private:
 };

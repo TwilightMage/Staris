@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "StarisStatics.h"
 #include "UObject/Object.h"
 
 #include "CompositeDatabase.generated.h"
@@ -110,6 +111,7 @@ public:
 		auto& Record = Records.FindOrAdd(Key);
 		if (!Record)
 		{
+			UE_LOG(LogStaris, Warning, TEXT("Record %s in database of %s has been created"), *Key.ToString(), *RecordComponentType->GetName());
 			Record = NewObject<UCompositeRecord>(this);
 			Record->RecordComponentType = RecordComponentType;
 		}

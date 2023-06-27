@@ -38,5 +38,7 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	TArray<UEmpire*> Empires;
 
+	TSharedPtr<FJsonObject> EmpireGeneratorSettings;
+
 	bool SetupDone = false;
 };
