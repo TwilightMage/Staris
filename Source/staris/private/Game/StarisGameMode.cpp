@@ -118,15 +118,29 @@ void AStarisGameMode::Setup()
 		Galaxy->OnGameStarted.AddUObject(this, &AStarisGameMode::GameStarted);
 
 		auto EmpireGenerator = NewObject<UUnitedEmpireGenerator>();
-		TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "EmpireTitle", EmpireGenerator->EmpireTitle);
-		TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "SystemTitle", EmpireGenerator->SystemTitle);
-		TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "CapitalTitle", EmpireGenerator->CapitalTitle);
-		auto EmpireRace = NewObject<URace>();
-		TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "FounderRace", EmpireRace->Title);
-		EmpireGenerator->EmpireRaces = { EmpireRace };
-		TRY_READ_SETTINGS_NUMBER(EmpireGeneratorSettings, "DesiredPopulation", EmpireGenerator->TotalPops);
 		int32 EmpireSeed = 0;
-		TRY_READ_SETTINGS_NUMBER(EmpireGeneratorSettings, "Seed", EmpireSeed);
+		auto EmpireRace = NewObject<URace>();
+		EmpireGenerator->EmpireRaces = { EmpireRace };
+		
+		if (EmpireGeneratorSettings)
+		{
+			TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "EmpireTitle", EmpireGenerator->EmpireTitle);
+			TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "SystemTitle", EmpireGenerator->SystemTitle);
+			TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "CapitalTitle", EmpireGenerator->CapitalTitle);
+			TRY_READ_SETTINGS_NUMBER(EmpireGeneratorSettings, "DesiredPopulation", EmpireGenerator->TotalPops);
+			TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "FounderRace", EmpireRace->Title);
+			TRY_READ_SETTINGS_NUMBER(EmpireGeneratorSettings, "Seed", EmpireSeed);
+		}
+		else
+		{
+			EmpireGenerator->EmpireTitle = "Great Foxik Empire";
+			EmpireGenerator->SystemTitle = "Solus";
+			EmpireGenerator->CapitalTitle = "Terra";
+			EmpireGenerator->TotalPops = 8000000;
+			EmpireRace->Title = "Foxus";
+			EmpireSeed = 0;
+		}
+		
 		Empires.Add(EmpireGenerator->Generate(Galaxy, EmpireSeed));
 	}
 	
