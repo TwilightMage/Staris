@@ -55,8 +55,8 @@ void AStarisPlayerPawn::Tick(float DeltaTime)
 	auto Settings = GetActorOfClass<AGalaxySettingsManager>(this);
 	auto VanillaSettings = Settings->GetSettings<UVanillaGalaxySettings>();
 	
-	float MovementScale = FMath::Lerp(1.0f, 200.0f, UnLerp(DesiredCamDist, GameSettings->MinZoomDistance, GameSettings->MaxZoomDistance));
-	DesiredLocation += (RootComponent->GetForwardVector() * Movement.X * MovementScale + RootComponent->GetRightVector() * Movement.Y * MovementScale) * DeltaTime * 1000;
+	float MovementScale = FMath::Lerp(1.0f, 2000.0f, UnLerp(DesiredCamDist, GameSettings->MinZoomDistance, GameSettings->MaxZoomDistance));
+	DesiredLocation += (RootComponent->GetForwardVector() * Movement.X * MovementScale + RootComponent->GetRightVector() * Movement.Y * MovementScale) * DeltaTime * 200;
 	DesiredLocation.Z = 0;
 	if (DesiredLocation.Size() > VanillaSettings->GalaxyRadius)
 	{
@@ -201,6 +201,6 @@ void AStarisPlayerPawn::CameraZoom(float Axis)
 	
 	float Aspect = UnLerp(DesiredCamDist, GameSettings->MinZoomDistance, GameSettings->MaxZoomDistance);
 	
-	DesiredCamDist = FMath::Clamp(DesiredCamDist - Axis * 30 * GameSettings->ScrollSensitivity * FMath::Lerp(1.f, 500.f, Aspect), GameSettings->MinZoomDistance, GameSettings->MaxZoomDistance);
+	DesiredCamDist = FMath::Clamp(DesiredCamDist - Axis * 30 * GameSettings->ScrollSensitivity * FMath::Lerp(1.f, 1000.f, Aspect), GameSettings->MinZoomDistance, GameSettings->MaxZoomDistance);
 }
 

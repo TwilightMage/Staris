@@ -35,8 +35,8 @@ float UShip::GetSpeed() const
 void UShip::Tick(float TickDelta, const FTransform& FleetTransform, FTransform& NewShipTransform)
 {
 	FVector NewLocation = FleetTransform.TransformPosition(PositionInFormation);
-	Transform.SetRotation(UKismetMathLibrary::FindLookAtRotation(Transform.GetLocation(), NewLocation).Quaternion());
-	Transform.SetLocation(NewLocation);
+	Transform.SetRotation(UKismetMathLibrary::Quat_Slerp(Transform.GetRotation(), UKismetMathLibrary::FindLookAtRotation(Transform.GetLocation(), NewLocation).Quaternion(), TickDelta * 10));
+	Transform.SetLocation(FMath::Lerp(Transform.GetLocation(), NewLocation, TickDelta * 10));
 
 	NewShipTransform = Transform;
 }
