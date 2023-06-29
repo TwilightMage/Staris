@@ -6,7 +6,18 @@
 #include "DesktopPlatformModule.h"
 #include "IDesktopPlatform.h"
 #include "ImageUtils.h"
-#include "UI/SettingsPanel.h"\
+#include "UI/SettingsPanel.h"
+
+UVanillaGalaxySettings::UVanillaGalaxySettings()
+{
+	DefaultShapeMasks = {
+		{"Spiral", Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), NULL, TEXT("/Game/Textures/Galaxy/GalaxyDistribution_uneven_spiral.GalaxyDistribution_uneven_spiral")))},
+		{"Clouds", Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), NULL, TEXT("/Game/Textures/Galaxy/GalaxyDistribution_clouds.GalaxyDistribution_clouds")))},
+		{"Crescent", Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), NULL, TEXT("/Game/Textures/Galaxy/GalaxyDistribution_crescent.GalaxyDistribution_crescent")))},
+		{"Torus", Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), NULL, TEXT("/Game/Textures/Galaxy/GalaxyDistribution_torus.GalaxyDistribution_torus")))},
+		{"Webbed Torus", Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), NULL, TEXT("/Game/Textures/Galaxy/GalaxyDistribution.GalaxyDistribution")))}
+	};
+}
 
 void UVanillaGalaxySettings::FillSettingsPanel(USettingsPanel* SettingsPanel, const TSharedPtr<FJsonObject>& Json)
 {
@@ -14,37 +25,20 @@ void UVanillaGalaxySettings::FillSettingsPanel(USettingsPanel* SettingsPanel, co
 	SETTINGS_FIELD_SEED(Seed);
 	SETTINGS_FIELD_NUMBER("VanillaGalaxySettings", "System Count", true, true, 1, false, 0, 1000, "", int32, SystemCount);
 	SETTINGS_FIELD_NUMBER("VanillaGalaxySettings", "Radius", false, true, 100000, false, 0, 1500000, "", float, GalaxyRadius);
-	SETTINGS_FIELD_SELECT_CUSTOM("VanillaGalaxySettings", "Shape", "Spiral", SETTINGS_FIELD_SELECT_ITEMS("Spiral", "Clouds", "Crescent", "Torus", "Webbed Torus", "None", "Custom..."), FSettingsPanelSelectCallbackNative::CreateWeakLambda(this, [=](const FString& Value)
+
+	TArray<FString> ShapeMaskNames;
+	DefaultShapeMasks.GetKeys(ShapeMaskNames);
+	ShapeMaskNames.Add("None");
+	ShapeMaskNames.Add("Custom...");
+	SETTINGS_FIELD_SELECT_CUSTOM("VanillaGalaxySettings", "Shape", "Spiral", ShapeMaskNames, FSettingsPanelSelectCallbackNative::CreateWeakLambda(this, [=](const FString& Value)
 	{
 		if (Value == "Custom...")
 		{
 			SavedMask = LoadMaskFromComputer();
 		}
-		else
+		else if (Value != "None")
 		{
-			FString Path = "";
-			if (Value == "Spiral")
-			{
-				Path = "/Game/Textures/Galaxy/GalaxyDistribution_uneven_spiral.GalaxyDistribution_uneven_spiral";
-			}
-			else if (Value == "Clouds")
-			{
-				Path = "/Game/Textures/Galaxy/GalaxyDistribution_clouds.GalaxyDistribution_clouds";
-			}
-			else if (Value == "Crescent")
-			{
-				Path = "/Game/Textures/Galaxy/GalaxyDistribution_crescent.GalaxyDistribution_crescent";
-			}
-			else if (Value == "Torus")
-			{
-				Path = "/Game/Textures/Galaxy/GalaxyDistribution_torus.GalaxyDistribution_torus";
-			}
-			else if (Value == "Webbed Torus")
-			{
-				Path = "/Game/Textures/Galaxy/GalaxyDistribution.GalaxyDistribution";
-			}
-			
-			SavedMask = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), NULL, *Path));
+			SavedMask = DefaultShapeMasks[Value];
 		}
 	}));
 	

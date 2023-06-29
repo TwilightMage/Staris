@@ -38,6 +38,8 @@ class STARIS_API UVanillaGalaxySettings : public UGalaxySettings
 	GENERATED_BODY()
 
 public:
+	UVanillaGalaxySettings();
+	
 	virtual void FillSettingsPanel(USettingsPanel* SettingsPanel, const TSharedPtr<FJsonObject>& Json) override;
 	
 	UFUNCTION(BlueprintCallable)
@@ -94,5 +96,8 @@ public:
 	float BlackHoleChance = 0.1;
 
 	inline static UTexture2D* SavedMask;
+
 private:
+	UPROPERTY(EditDefaultsOnly)
+	TMap<FString, UTexture2D*> DefaultShapeMasks;
 };
