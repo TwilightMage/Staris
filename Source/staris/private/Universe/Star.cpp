@@ -24,15 +24,18 @@ void UStar::SetupToolTip(UToolTip* ToolTip)
 	UEmpire* Empire = GetSystem()->GetOwningEmpire();
 
 	ToolTip->AddLine(FText::Format(NSLOCTEXT("Star", "StarToolTip_Star", "Star: {0}"), GetTitle()));
+	
+	ToolTip->AddLine(FText::Format(NSLOCTEXT("Star", "StarToolTip_System", "System: {0} ({1})"), GetSystem()->GetTitle(), FText::FromString(Empire ? Empire->Title : "Unowned")));
+	//ToolTip->AddLine(FText::Format(NSLOCTEXT("Star", "StarToolTip_Class", "Class: {0}"), FText::FromString(TypeRecord->GetOrCreateComponent<UVanillaStarTypeProperties>()->Title)));
 
 	if (UStarisGameInstance::DebugToolsEnabled)
 	{
+		ToolTip->AddSeparator();
+		ToolTip->AddLine(FText::Format(NSLOCTEXT("Star", "StarToolTip_StarId", "Star ID: {0}"), FText::FromName(Id)));
 		ToolTip->AddLine(FText::Format(NSLOCTEXT("Star", "StarToolTip_StarSeed", "Star Seed: {0}"), FText::FromString(FString::FromInt(GetSeed()))));
+		ToolTip->AddLine(FText::Format(NSLOCTEXT("Star", "StarToolTip_SystemId", "System ID: {0}"), FText::FromName(GetSystem()->GetId())));
 		ToolTip->AddLine(FText::Format(NSLOCTEXT("Star", "StarToolTip_SystemSeed", "System Seed: {0}"), FText::FromString(FString::FromInt(GetSystem()->GetSeed()))));
 	}
-	
-	ToolTip->AddLine(FText::Format(NSLOCTEXT("Star", "StarToolTip_System", "System: {0} ({1})"), GetSystem()->GetTitle(), FText::FromString(Empire ? Empire->Title : "Unowned")));
-	ToolTip->AddLine(FText::Format(NSLOCTEXT("Star", "StarToolTip_Class", "Class: {0}"), FText::FromString(TypeRecord->GetOrCreateComponent<UVanillaStarTypeProperties>()->Title)));
 }
 
 TArray<UContextMenuItem*> UStar::CreateContextActionsHovered(IFocusable* Selected)
@@ -67,9 +70,28 @@ TArray<UContextMenuItem*> UStar::CreateContextActionsHovered(IFocusable* Selecte
 	return Result;
 }
 
+USceneLabel* UStar::CreateLabel()
+{
+	return nullptr;
+}
+
+void UStar::SetupLabel(USceneLabel* Label)
+{
+}
+
+FVector UStar::GetLabelLocation() const
+{
+	return GetLocation() + FVector(0, 0, Scale * 50 + 5);
+}
+
 FText UStar::GetTitle() const
 {
-	return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(UStarisGameInstance::DebugToolsEnabled ? Title + " [" + Id.ToString() + "]" : Title);
+	return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(Title);
+}
+
+UTexture2D* UStar::GetIcon() const
+{
+	return Icon;
 }
 
 USystem* UStar::GetSystem() const
@@ -88,6 +110,7 @@ void UStar::ApplyPattern_Implementation(const FStarMetaData& Data)
 	Title = Data.Title;
 	Id = Data.Id;
 	Seed = Data.Seed;
+	Scale = Data.Scale;
 	TypeRecord = Data.Type;
 
 	if (auto Galaxy = GetGalaxy())

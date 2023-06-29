@@ -105,11 +105,11 @@ UTexture2D* UVanillaGalaxySettings::LoadMaskFromComputer()
 	if (FDesktopPlatformModule::Get()->OpenFileDialog(GEngine->GameViewport->GetWindow()->GetNativeWindow()->GetOSWindowHandle(), "Select Galaxy Mask", "", "", "png files (*.png)|*.png", EFileDialogFlags::None, Files))
 	{
 		auto Texture = FImageUtils::ImportFileAsTexture2D(Files[0]);
-		Texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
-		Texture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
-		Texture->SRGB = false;
-		
-		Texture->UpdateResource();
+		//Texture->MipGenSettings = TextureMipGenSettings::TMGS_NoMipmaps;
+		//Texture->CompressionSettings = TextureCompressionSettings::TC_VectorDisplacementmap;
+		//Texture->SRGB = false;
+		//
+		//Texture->UpdateResource();
 
 		Texture->AddToRoot();
     

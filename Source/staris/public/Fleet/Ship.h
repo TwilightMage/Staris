@@ -6,6 +6,8 @@
 #include "Fleet.h"
 #include "Focusable.h"
 #include "Components/SceneComponent.h"
+#include "..\Universe\Titled.h"
+#include "Universe/LabelableProxy.h"
 #include "Ship.generated.h"
 
 class UMeshInstanceRef;
@@ -13,7 +15,7 @@ class UCompositeRecord;
 class AFleet;
 
 UCLASS(Abstract, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class STARIS_API UShip : public UObject, public IFocusable
+class STARIS_API UShip : public UObject, public IFocusable, public ILabeledProxy
 {
 	GENERATED_BODY()
 public:
@@ -23,8 +25,9 @@ public:
 	void Setup(UEmpire* Empire);
 
 	virtual void SetupToolTip(UToolTip* ToolTip) override;
-
 	virtual void OnSelected() override;
+
+	virtual ILabeled* GetLabeled() const override;
 
 	UFUNCTION(BlueprintPure)
 	virtual bool CanExecuteOrder(UFleetOrder* Order) const { return false; }

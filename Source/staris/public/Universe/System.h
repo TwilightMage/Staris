@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "CelestialEntity.h"
 #include "GalaxyMetaData.h"
+#include "Titled.h"
 #include "GameFramework/Actor.h"
 
 #include "System.generated.h"
@@ -16,7 +17,7 @@ class UStar;
 class UEmpire;
 
 UCLASS(BlueprintType)
-class STARIS_API USystem : public UObject, public ICelestialEntity
+class STARIS_API USystem : public UObject, public ICelestialEntity, public ITitled
 {
 	GENERATED_BODY()
 
@@ -31,8 +32,7 @@ public:
 	UFUNCTION(BlueprintPure)
 	UEmpire* GetOwningEmpire();
 
-	UFUNCTION(BlueprintPure)
-	FText GetTitle() const;
+	virtual FText GetTitle() const override;
 
 	void RenameSystem(const FString& NewName, bool PropagateToChildren);
 

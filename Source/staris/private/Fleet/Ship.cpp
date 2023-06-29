@@ -16,7 +16,8 @@ UShip::UShip()
 void UShip::SetupToolTip(UToolTip* ToolTip)
 {
 	ToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Ship", "ShipToolTip_Class", "Vessel Class: {0}")), GetClassTitle()));
-	ToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Ship", "ShipToolTip_Fleet", "Fleet: {0}")), FText::FromString(GetFleet()->Title)));
+
+	GetFleet()->SetupToolTip(ToolTip);
 }
 
 void UShip::OnSelected()
@@ -25,6 +26,11 @@ void UShip::OnSelected()
 	{
 		HUD->OpenFocusablePanel(this);
 	}
+}
+
+ILabeled* UShip::GetLabeled() const
+{
+	return GetFleet();
 }
 
 float UShip::GetSpeed() const

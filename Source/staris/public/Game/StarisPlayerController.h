@@ -8,6 +8,8 @@
 
 #include "StarisPlayerController.generated.h"
 
+class USceneLabel;
+class ILabeled;
 class USystem;
 class USoundCue;
 class UContextMenu;
@@ -103,7 +105,7 @@ private:
 	
 	UPROPERTY()
 	UContextMenu* CurrentContextMenu;
-
+	
 	// Components
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess))

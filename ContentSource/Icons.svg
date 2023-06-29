@@ -7,7 +7,7 @@
    viewBox="0 0 39.687499 39.6875"
    version="1.1"
    id="svg5"
-   inkscape:export-filename="..\Content\Textures\UI\SpeedDown.png"
+   inkscape:export-filename="..\Content\Textures\UI\Star.png"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
    inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
@@ -27,15 +27,15 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="4.2179991"
-     inkscape:cx="58.440032"
-     inkscape:cy="75.154118"
+     inkscape:zoom="5.9651515"
+     inkscape:cx="59.260859"
+     inkscape:cy="64.70917"
      inkscape:window-width="1920"
      inkscape:window-height="1017"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer6" />
+     inkscape:current-layer="layer7" />
   <defs
      id="defs2">
     <marker
@@ -170,7 +170,8 @@
   <g
      inkscape:groupmode="layer"
      id="layer6"
-     inkscape:label="Reset">
+     inkscape:label="Reset"
+     style="display:none">
     <path
        style="display:inline;fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:2.64583;stroke-dasharray:none;stroke-opacity:1;marker-start:url(#TriangleStart)"
        id="Segment_1"
@@ -197,5 +198,95 @@
        sodipodi:open="true"
        sodipodi:arc-type="arc"
        d="M 32.004513,32.004513 A 17.197916,17.197916 0 0 1 11.244792,34.737582 17.197916,17.197916 0 0 1 3.2318386,15.392602" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer7"
+     inkscape:label="Star"
+     style="display:inline">
+    <circle
+       style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:1.32291667;stroke-dasharray:none;stroke-opacity:1"
+       id="path4082"
+       cx="19.84375"
+       cy="19.84375"
+       r="18.520834" />
+    <circle
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+       id="path4084"
+       cx="19.84375"
+       cy="19.84375"
+       r="13.229167" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer8"
+     inkscape:label="Planet"
+     style="display:none">
+    <circle
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2.64583;stroke-dasharray:none;stroke-opacity:1"
+       id="path4903"
+       cx="19.84375"
+       cy="19.84375"
+       r="7.9375" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer9"
+     inkscape:label="ScienceFleet"
+     style="display:none">
+    <circle
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2.64583;stroke-dasharray:none;stroke-opacity:1"
+       id="path4950"
+       cx="19.84375"
+       cy="19.84375"
+       r="3"
+       inkscape:label="Core" />
+    <ellipse
+       style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+       id="path4952"
+       cx="19.84375"
+       cy="19.84375"
+       rx="6"
+       ry="15"
+       inkscape:label="ElectronOrbit1" />
+    <ellipse
+       style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+       id="ellipse4989"
+       inkscape:label="ElectronOrbit2"
+       cy="-7.2633166"
+       cx="27.107067"
+       ry="15"
+       rx="6"
+       transform="rotate(60)" />
+    <ellipse
+       style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+       id="ellipse4991"
+       cx="-7.2633166"
+       cy="27.107067"
+       rx="6"
+       ry="15"
+       inkscape:label="ElectronOrbit3"
+       transform="rotate(-60)" />
+    <circle
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+       id="path5115"
+       cx="19.84375"
+       cy="4.1822901"
+       r="3"
+       inkscape:label="Electron1" />
+    <circle
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+       id="path5115-5"
+       cx="32.245968"
+       cy="27.500002"
+       r="3"
+       inkscape:label="Electron1" />
+    <circle
+       style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+       id="path5115-0"
+       cx="7.1582661"
+       cy="27.500002"
+       r="3"
+       inkscape:label="Electron1" />
   </g>
 </svg>

@@ -7,6 +7,8 @@
 #include "Focusable.h"
 #include "Components/SceneComponent.h"
 #include "GalaxyMetaData.h"
+#include "Titled.h"
+#include "Labelable.h"
 
 #include "Star.generated.h"
 
@@ -15,7 +17,7 @@ class USystem;
 class UToolTip;
 
 UCLASS(BlueprintType)
-class STARIS_API UStar : public UObject, public ICelestialEntity, public IFocusable
+class STARIS_API UStar : public UObject, public ICelestialEntity, public IFocusable, public ITitled, public ILabeled
 {
 	GENERATED_BODY()
 
@@ -31,8 +33,12 @@ public:
 
 	virtual TArray<UContextMenuItem*> CreateContextActionsHovered(IFocusable* Selected) override;
 
-	UFUNCTION(BlueprintPure)
-	FText GetTitle() const;
+	virtual USceneLabel* CreateLabel() override;
+	virtual void SetupLabel(USceneLabel* Label) override;
+	virtual FVector GetLabelLocation() const override;
+
+	virtual FText GetTitle() const override;
+	virtual UTexture2D* GetIcon() const override;
 
 	const FName& GetId() const { return Id; }
 	int32 GetSeed() const { return Seed; }
@@ -45,12 +51,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Title;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UTexture2D* Icon;
+
 private:
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	FName Id;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	int32 Seed;
+
+	float Scale;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	UMeshInstanceRef* MeshInstance;

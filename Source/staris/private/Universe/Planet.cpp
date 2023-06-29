@@ -89,18 +89,27 @@ void UPlanet::SetupToolTip(UToolTip* ToolTip)
 	UEmpire* Empire = GetSystem()->GetOwningEmpire();
 
 	ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_Star", "Planet: {0}"), GetTitle()));
-
-	if (UStarisGameInstance::DebugToolsEnabled)
-	{
-		ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_PlanetSeed", "Planet Seed: {0}"), FText::FromString(FString::FromInt(GetSeed()))));
-	}
-	
 	ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_System", "System: {0} ({1})"), GetSystem()->GetTitle(), FText::FromString(Empire ? Empire->Title : "Unowned")));
-	ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_AverageTemperature", "Average Temperature: {0}°C"), Temperature));
+	//ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_AverageTemperature", "Average Temperature: {0}°C"), Temperature));
 
 	if (Colony)
 	{
-		ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_Population", "Population: {0}"), Colony->getTotalPopulationAmount()));
+		//ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_Population", "Population: {0}"), Colony->getTotalPopulationAmount()));
+		if (Empire->Capital == this)
+		{
+			ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_State", "State: Capital of {0}"), FText::FromString(Empire->Title)));
+		}
+		else
+		{
+			ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_State", "State: Colony of {0}"), FText::FromString(Empire->Title)));
+		}
+	}
+
+	if (UStarisGameInstance::DebugToolsEnabled)
+	{
+		ToolTip->AddSeparator();
+		ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_PlanetSeed", "Planet ID: {0}"), FText::FromName(Id)));
+		ToolTip->AddLine(FText::Format(NSLOCTEXT("Planet", "PlanetToolTip_PlanetSeed", "Planet Seed: {0}"), FText::FromString(FString::FromInt(GetSeed()))));
 	}
 }
 
@@ -143,6 +152,20 @@ TArray<UContextMenuItem*> UPlanet::CreateContextActionsHovered(IFocusable* Selec
 	return Result;
 }
 
+USceneLabel* UPlanet::CreateLabel()
+{
+	return nullptr;
+}
+
+void UPlanet::SetupLabel(USceneLabel* Label)
+{
+}
+
+FVector UPlanet::GetLabelLocation() const
+{
+	return GetLocation() + FVector(0, 0, Scale * 15 + 5);
+}
+
 void UPlanet::OnSelected()
 {
 	if (auto HUD = GetActorOfClass<AStarisHUD>(this))
@@ -153,7 +176,12 @@ void UPlanet::OnSelected()
 
 FText UPlanet::GetTitle() const
 {
-	return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(UStarisGameInstance::DebugToolsEnabled ? Title + " [" + Id.ToString() + "]" : Title);
+	return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(Title);
+}
+
+UTexture2D* UPlanet::GetIcon() const
+{
+	return Icon;
 }
 
 void UPlanet::AddTileToLayer(int32 Layer, UCompositeRecord* ResourceType)
@@ -182,6 +210,7 @@ void UPlanet::ApplyPattern_Implementation(const FPlanetMetaData& Data)
 	Id = Data.Id;
 	Seed = Data.Seed;
 	Temperature = Data.Temperature;
+	Scale = Data.Scale;
 	Radius = Data.Scale * 12000;
 	Layers = Data.Layers;
 

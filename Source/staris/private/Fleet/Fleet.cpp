@@ -7,11 +7,15 @@
 #include "Fleet/FleetOrder.h"
 #include "Fleet/FleetPath.h"
 #include "Fleet/Ship.h"
+#include "Game/StarisHUD.h"
 #include "Game/StarisPlayerController.h"
+#include "UI/ToolTip.h"
 #include "Universe/Galaxy.h"
 
 #include "Universe/StarisInstancedStaticMesh.h"
 
+
+class AStarisHUD;
 
 AFleet::AFleet()
 {
@@ -68,6 +72,34 @@ void AFleet::Tick(float DeltaSeconds)
 	//{
 	//	InstancedMesh.Value->MarkRenderInstancesDirty();
 	//}
+}
+
+FText AFleet::GetTitle() const
+{
+	return FText::FromString(Title);
+}
+
+UTexture2D* AFleet::GetIcon() const
+{
+	return Icon;
+}
+
+void AFleet::SetupToolTip(UToolTip* ToolTip)
+{
+	ToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Fleet", "Fleet_Fleet", "Fleet: {0}")), FText::FromString(Title)));
+}
+
+void AFleet::OnSelected()
+{
+	if (auto HUD = GetActorOfClass<AStarisHUD>(this))
+	{
+		HUD->OpenFocusablePanel(this);
+	}
+}
+
+FVector AFleet::GetLabelLocation() const
+{
+	return GetRootComponent()->GetComponentTransform().GetLocation() + FVector(0, 0, 5);
 }
 
 void AFleet::Setup(UEmpire* Empire)

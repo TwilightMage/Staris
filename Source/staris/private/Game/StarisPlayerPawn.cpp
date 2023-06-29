@@ -5,12 +5,18 @@
 
 #include "StarisStatics.h"
 #include "Camera/CameraComponent.h"
+#include "Components/SphereComponent.h"
 #include "Game/StarisGameSettings.h"
 #include "Game/StarisPlayerController.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "UI/SceneLabel.h"
+#include "UI/TitleLabel.h"
 #include "Universe/Galaxy.h"
 #include "Universe/GalaxySettingsManager.h"
+#include "Universe/LabelableProxy.h"
+#include "Universe/Planet.h"
 #include "Universe/Star.h"
+#include "Universe/StarisInstancedStaticMesh.h"
 #include "Universe/System.h"
 #include "Universe/VanillaGalaxySettings.h"
 
@@ -29,6 +35,12 @@ AStarisPlayerPawn::AStarisPlayerPawn()
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>("Camera");
 	CameraComponent->SetupAttachment(CameraArm);
 	CameraComponent->SetRelativeLocation(FVector(-1000, 0, 0));
+
+	ProximitySphere = CreateDefaultSubobject<USphereComponent>("Proximity Sphere");
+	ProximitySphere->SetupAttachment(CameraComponent);
+	ProximitySphere->SetSphereRadius(5000);
+	ProximitySphere->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::ProximitySphereBeginOverlap);
+	ProximitySphere->OnComponentEndOverlap.AddDynamic(this, &ThisClass::ProximitySphereEndOverlap);
 }
 
 void AStarisPlayerPawn::BeginPlay()
@@ -106,6 +118,22 @@ void AStarisPlayerPawn::Tick(float DeltaTime)
 	//}
 
 	Galaxy->SetStarsScale(FMath::Lerp(1.0f, 50.0f, UnLerp((float)CameraComponent->GetComponentLocation().Z, GameSettings->MinZoomDistance, GameSettings->MaxZoomDistance)));
+
+	if (auto StarisPlayerController = Cast<AStarisPlayerController>(GetController()))
+	{
+		for (auto Pair : Labels)
+		{
+			FVector2D ScreenLocation;
+			
+			if (UGameplayStatics::ProjectWorldToScreen(StarisPlayerController, Pair.Key->GetLabelLocation(), ScreenLocation))
+			{
+				for (auto Label : Pair.Value)
+				{
+					Label->SetPositionInViewport(ScreenLocation);
+				}
+			}
+		}
+	}
 }
 
 void AStarisPlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -140,6 +168,103 @@ void AStarisPlayerPawn::MoveToLocation(const FVector& Location)
 	{
 		RootComponent->SetWorldLocation(DesiredLocation);
 	}
+}
+
+void AStarisPlayerPawn::ProximitySphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (auto InstancedMesh = Cast<UStarisInstancedStaticMesh>(OtherComp))
+	{
+		if (auto Instance = InstancedMesh->TryGetObjectRef(OtherBodyIndex))
+		{
+			if (auto Star = Cast<UStar>(Instance->Object))
+			{
+				SystemsInProximity.FindOrAdd(Star->GetSystem())++;
+			}
+
+			auto Labeled = Cast<ILabeled>(Instance->Object);
+			if (!Labeled)
+			{
+				if (auto LabeledProxy = Cast<ILabeledProxy>(Instance->Object))
+				{
+					Labeled = LabeledProxy->GetLabeled();
+
+					if (Labeled->DisplayCounter++ > 0)
+					{
+						Labeled = nullptr;
+					}
+				}
+			}
+			
+			if (Labeled)
+			{
+				if (auto Titled = Cast<ITitled>(Labeled))
+				{
+					auto TitleLabel = NewObject<UTitleLabel>(this, TitleLabelClass);
+					TitleLabel->SetOwningPlayer(Cast<AStarisPlayerController>(GetController()));
+					TitleLabel->AddToPlayerScreen();
+					TitleLabel->Setup(Cast<UObject>(Labeled));
+					Labels.FindOrAdd(Labeled).Add(TitleLabel);
+
+					if (auto Focusable = Cast<IFocusable>(Labeled))
+					{
+						TitleLabel->OnLabelClicked.AddWeakLambda(this, [this, Focusable]()
+						{
+							if (auto StarisPlayerController = Cast<AStarisPlayerController>(GetController()))
+							{
+								StarisPlayerController->SelectFocusable(Focusable);
+							}
+						});
+					}
+				}
+			}
+		}
+	}
+}
+
+void AStarisPlayerPawn::ProximitySphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (auto InstancedMesh = Cast<UStarisInstancedStaticMesh>(OtherComp))
+    	{
+    		if (auto Instance = InstancedMesh->TryGetObjectRef(OtherBodyIndex))
+    		{
+    			if (auto Star = Cast<UStar>(Instance->Object))
+    			{
+    				auto System = Star->GetSystem();
+    				if (auto SystemCounter = SystemsInProximity.Find(System))
+    				{
+    					(*SystemCounter)--;
+    					if (*SystemCounter <= 0)
+    					{
+    						SystemsInProximity.Remove(System);
+    					}
+    				}
+    			}
+
+    			auto Labeled = Cast<ILabeled>(Instance->Object);
+    			if (!Labeled)
+    			{
+    				if (auto LabeledProxy = Cast<ILabeledProxy>(Instance->Object))
+    				{
+    					Labeled = LabeledProxy->GetLabeled();
+
+    					if (--Labeled->DisplayCounter > 0)
+    					{
+    						Labeled = nullptr;
+    					}
+    				}
+    			}
+    			
+    			if (Labeled)
+    			{
+    				for (auto Label : Labels.FindRef(Labeled))
+    				{
+    					Label->RemoveFromParent();
+    				}
+    				
+    				Labels.Remove(Labeled);
+    			}
+    		}
+    	}
 }
 
 void AStarisPlayerPawn::RotateCamera_Pressed()

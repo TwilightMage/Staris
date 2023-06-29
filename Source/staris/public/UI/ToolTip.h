@@ -18,4 +18,7 @@ class STARIS_API UToolTip : public UUserWidget
 public:
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 	void AddLine(const FText& Line);
+
+	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
+	void AddSeparator();
 };

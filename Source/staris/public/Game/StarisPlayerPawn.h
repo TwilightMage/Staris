@@ -7,10 +7,14 @@
 
 #include "StarisPlayerPawn.generated.h"
 
+class USceneLabel;
+class UTitleLabel;
+class USphereComponent;
 class AStarisGameSettings;
 class AGalaxy;
 class USpringArmComponent;
 class UCameraComponent;
+class ILabeled;
 
 UCLASS()
 class STARIS_API AStarisPlayerPawn : public APawn
@@ -38,7 +42,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UCameraComponent* CameraComponent;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	USphereComponent* ProximitySphere;
+
 private:
+	UFUNCTION()
+	void ProximitySphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void ProximitySphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	
 	void RotateCamera_Pressed();
 	void RotateCamera_Released();
 
@@ -69,4 +82,12 @@ private:
 
 	UPROPERTY()
 	AStarisGameSettings* GameSettings;
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UTitleLabel> TitleLabelClass;
+
+	TMap<ILabeled*, TArray<USceneLabel*>> Labels;
+
+	UPROPERTY()
+	TMap<USystem*, int32> SystemsInProximity;
 };

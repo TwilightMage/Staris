@@ -21,7 +21,7 @@ UEmpire* USystem::GetOwningEmpire()
 
 FText USystem::GetTitle() const
 {
-	return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(UStarisGameInstance::DebugToolsEnabled ? Title + " [" + Id.ToString() + "]" : Title);
+	return Title.IsEmpty() ? FText::FromName(Id) : FText::FromString(Title);
 }
 
 void USystem::RenameSystem(const FString& NewName, bool PropagateToChildren)

@@ -3,8 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Focusable.h"
 #include "Empire/Empire.h"
 #include "GameFramework/Actor.h"
+#include "Universe/Labelable.h"
+#include "Universe/Titled.h"
 
 #include "Fleet.generated.h"
 
@@ -35,7 +38,7 @@ struct FOrderExecutionState
 };
 
 UCLASS()
-class STARIS_API AFleet : public AActor
+class STARIS_API AFleet : public AActor, public ITitled, public IFocusable, public ILabeled
 {
 	GENERATED_BODY()
 
@@ -47,6 +50,16 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
+	virtual FText GetTitle() const override;
+	virtual UTexture2D* GetIcon() const override;
+
+	virtual void SetupToolTip(UToolTip* ToolTip) override;
+	virtual void OnSelected() override;
+	
+	virtual USceneLabel* CreateLabel() override { return nullptr; }
+	virtual void SetupLabel(USceneLabel* Label) override {}
+	virtual FVector GetLabelLocation() const override;
+	
 	void Setup(UEmpire* Empire);
 	
 	UFUNCTION(BlueprintCallable)
@@ -77,6 +90,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FString Title = NSLOCTEXT("Fleet", "Unnamed Fleet", "Unnamed Fleet").ToString();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UTexture2D* Icon;
 
 	UPROPERTY(BlueprintAssignable, DisplayName="On Order Started")
 	FFleetOrderStartedDynamicEvent OnOrderStarted_K2;
