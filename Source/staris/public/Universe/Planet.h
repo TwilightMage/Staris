@@ -7,7 +7,7 @@
 #include "Focusable.h"
 #include "GalaxyMetaData.h"
 #include "Titled.h"
-#include "Labelable.h"
+#include "Labeled.h"
 
 #include "Planet.generated.h"
 

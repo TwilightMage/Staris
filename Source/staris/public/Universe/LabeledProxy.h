@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "LabelableProxy.generated.h"
+#include "LabeledProxy.generated.h"
 
 class ILabeled;
 // This class does not need to be modified.

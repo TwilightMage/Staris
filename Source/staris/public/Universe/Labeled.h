@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "Labelable.generated.h"
+#include "Labeled.generated.h"
 
 class USceneLabel;
 

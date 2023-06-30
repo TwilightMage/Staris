@@ -7,7 +7,7 @@
 #include "Focusable.h"
 #include "Components/SceneComponent.h"
 #include "..\Universe\Titled.h"
-#include "Universe/LabelableProxy.h"
+#include "..\Universe\LabeledProxy.h"
 #include "Ship.generated.h"
 
 class UMeshInstanceRef;

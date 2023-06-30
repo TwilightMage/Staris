@@ -8,6 +8,7 @@
 
 #include "StarisPlayerController.generated.h"
 
+class ULabelExtension;
 class USceneLabel;
 class ILabeled;
 class USystem;
@@ -84,7 +85,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(AllowPrivateAccess))
 	TArray<USoundBase*> MusicPlaySet;
 	
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess))
 	UEmpire* OwnedEmpire;
 
 	IFocusable* FocusableUnderMouse;

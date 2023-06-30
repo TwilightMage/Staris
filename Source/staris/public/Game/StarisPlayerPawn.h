@@ -15,6 +15,7 @@ class AGalaxy;
 class USpringArmComponent;
 class UCameraComponent;
 class ILabeled;
+class UInputComponent;
 
 UCLASS()
 class STARIS_API AStarisPlayerPawn : public APawn
@@ -28,13 +29,16 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	UFUNCTION(BlueprintCallable)
 	void MoveToTarget(USceneComponent* Target, bool Track);
 
 	UFUNCTION(BlueprintCallable)
 	void MoveToLocation(const FVector& Location);
+
+	UFUNCTION(BlueprintCallable, meta=(AutoCreateRefTerm=LabelExtensionClass))
+	void SetActiveLabelExtension(const TSubclassOf<ULabelExtension>& LabelExtensionClass);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	USceneComponent* CameraArm;
@@ -86,7 +90,10 @@ private:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<UTitleLabel> TitleLabelClass;
 
-	TMap<ILabeled*, TArray<USceneLabel*>> Labels;
+	TMap<ILabeled*, USceneLabel*> Labels;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta=(AllowPrivateAccess))
+	TSubclassOf<ULabelExtension> ActiveLabelExtension;
 
 	UPROPERTY()
 	TMap<USystem*, int32> SystemsInProximity;

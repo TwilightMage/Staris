@@ -8,13 +8,12 @@
 #include "Components/SphereComponent.h"
 #include "Game/StarisGameSettings.h"
 #include "Game/StarisPlayerController.h"
-#include "Kismet/KismetMathLibrary.h"
+#include "UI/LabelExtension.h"
 #include "UI/SceneLabel.h"
 #include "UI/TitleLabel.h"
 #include "Universe/Galaxy.h"
 #include "Universe/GalaxySettingsManager.h"
-#include "Universe/LabelableProxy.h"
-#include "Universe/Planet.h"
+#include "..\..\public\Universe\LabeledProxy.h"
 #include "Universe/Star.h"
 #include "Universe/StarisInstancedStaticMesh.h"
 #include "Universe/System.h"
@@ -127,10 +126,7 @@ void AStarisPlayerPawn::Tick(float DeltaTime)
 			
 			if (UGameplayStatics::ProjectWorldToScreen(StarisPlayerController, Pair.Key->GetLabelLocation(), ScreenLocation))
 			{
-				for (auto Label : Pair.Value)
-				{
-					Label->SetPositionInViewport(ScreenLocation);
-				}
+				Pair.Value->SetPositionInViewport(ScreenLocation);
 			}
 		}
 	}
@@ -170,6 +166,25 @@ void AStarisPlayerPawn::MoveToLocation(const FVector& Location)
 	}
 }
 
+void AStarisPlayerPawn::SetActiveLabelExtension(const TSubclassOf<ULabelExtension>& LabelExtensionClass)
+{
+	const auto ExtensionCDO = LabelExtensionClass.GetDefaultObject();
+	
+	for (const auto Labeled : Labels)
+	{
+		if (ExtensionCDO && ExtensionCDO->TestTarget(Labeled.Key))
+		{
+			Labeled.Value->SetLabelExtension(LabelExtensionClass);
+		}
+		else
+		{
+			Labeled.Value->SetLabelExtension(nullptr);
+		}
+	}
+
+	ActiveLabelExtension = LabelExtensionClass;
+}
+
 void AStarisPlayerPawn::ProximitySphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (auto InstancedMesh = Cast<UStarisInstancedStaticMesh>(OtherComp))
@@ -202,8 +217,15 @@ void AStarisPlayerPawn::ProximitySphereBeginOverlap(UPrimitiveComponent* Overlap
 					auto TitleLabel = NewObject<UTitleLabel>(this, TitleLabelClass);
 					TitleLabel->SetOwningPlayer(Cast<AStarisPlayerController>(GetController()));
 					TitleLabel->AddToPlayerScreen();
-					TitleLabel->Setup(Cast<UObject>(Labeled));
-					Labels.FindOrAdd(Labeled).Add(TitleLabel);
+					TitleLabel->Labeled = Labeled;
+					TitleLabel->Setup(Cast<UObject>(Titled));
+
+					if (ActiveLabelExtension && ActiveLabelExtension.GetDefaultObject()->TestTarget(Labeled))
+					{
+						TitleLabel->SetLabelExtension(ActiveLabelExtension);
+					}
+					
+					Labels.Add(Labeled, TitleLabel);
 
 					if (auto Focusable = Cast<IFocusable>(Labeled))
 					{
@@ -256,10 +278,7 @@ void AStarisPlayerPawn::ProximitySphereEndOverlap(UPrimitiveComponent* Overlappe
     			
     			if (Labeled)
     			{
-    				for (auto Label : Labels.FindRef(Labeled))
-    				{
-    					Label->RemoveFromParent();
-    				}
+    				Labels.FindRef(Labeled)->RemoveFromParent();
     				
     				Labels.Remove(Labeled);
     			}

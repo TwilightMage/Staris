@@ -6,7 +6,7 @@
 #include "Focusable.h"
 #include "Empire/Empire.h"
 #include "GameFramework/Actor.h"
-#include "Universe/Labelable.h"
+#include "..\Universe\Labeled.h"
 #include "Universe/Titled.h"
 
 #include "Fleet.generated.h"

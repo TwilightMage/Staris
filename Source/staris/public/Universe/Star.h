@@ -8,7 +8,7 @@
 #include "Components/SceneComponent.h"
 #include "GalaxyMetaData.h"
 #include "Titled.h"
-#include "Labelable.h"
+#include "Labeled.h"
 
 #include "Star.generated.h"
 

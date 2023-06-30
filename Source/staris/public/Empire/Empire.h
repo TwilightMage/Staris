@@ -30,7 +30,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEmpirePlanetKnowledgeAddedDynamicEv
 /**
  * 
  */
-UCLASS()
+UCLASS(BlueprintType)
 class STARIS_API UEmpire : public UObject
 {
 	GENERATED_BODY()
