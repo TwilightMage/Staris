@@ -20,6 +20,11 @@ void UShip::SetupToolTip(UToolTip* ToolTip)
 	GetFleet()->SetupToolTip(ToolTip);
 }
 
+TArray<UContextMenuItem*> UShip::CreateContextActionsSelected(IFocusable* Hovered)
+{
+	return GetFleet()->CreateContextActionsSelected(Hovered);
+}
+
 void UShip::OnSelected()
 {
 	if (auto HUD = GetActorOfClass<AStarisHUD>(this))

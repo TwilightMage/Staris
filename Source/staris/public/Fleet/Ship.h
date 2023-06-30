@@ -25,6 +25,7 @@ public:
 	void Setup(UEmpire* Empire);
 
 	virtual void SetupToolTip(UToolTip* ToolTip) override;
+	virtual TArray<UContextMenuItem*> CreateContextActionsSelected(IFocusable* Hovered) override;
 	virtual void OnSelected() override;
 
 	virtual ILabeled* GetLabeled() const override;

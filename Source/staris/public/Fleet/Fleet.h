@@ -19,8 +19,11 @@ class UFleetOrder;
 class UStarisInstancedStaticMesh;
 class UShip;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FFleetOrderStartedEvent, UFleetOrder* /* New Order */);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFleetOrderStartedDynamicEvent, UFleetOrder*, NewOrder);
+DECLARE_MULTICAST_DELEGATE_OneParam(FFleetOrderEvent, UFleetOrder* /* Order */);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFleetOrderDynamicEvent, UFleetOrder*, Order);
+
+DECLARE_MULTICAST_DELEGATE(FFleetOrderClearEvent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FFleetOrderClearDynamicEvent);
 
 USTRUCT(BlueprintType)
 struct FOrderExecutionState
@@ -54,6 +57,7 @@ public:
 	virtual UTexture2D* GetIcon() const override;
 
 	virtual void SetupToolTip(UToolTip* ToolTip) override;
+	virtual TArray<UContextMenuItem*> CreateContextActionsSelected(IFocusable* Hovered) override;
 	virtual void OnSelected() override;
 	
 	virtual USceneLabel* CreateLabel() override { return nullptr; }
@@ -95,8 +99,20 @@ public:
 	UTexture2D* Icon;
 
 	UPROPERTY(BlueprintAssignable, DisplayName="On Order Started")
-	FFleetOrderStartedDynamicEvent OnOrderStarted_K2;
-	FFleetOrderStartedEvent OnOrderStarted;
+	FFleetOrderDynamicEvent OnOrderStarted_K2;
+	FFleetOrderEvent OnOrderStarted;
+
+	UPROPERTY(BlueprintAssignable, DisplayName="On Order Added")
+	FFleetOrderDynamicEvent OnOrderAdded_K2;
+	FFleetOrderEvent OnOrderAdded;
+
+	UPROPERTY(BlueprintAssignable, DisplayName="On Order Removed")
+	FFleetOrderDynamicEvent OnOrderRemoved_K2;
+	FFleetOrderEvent OnOrderRemoved;
+
+	UPROPERTY(BlueprintAssignable, DisplayName="On Order Clear")
+	FFleetOrderClearDynamicEvent OnOrderClear_K2;
+	FFleetOrderClearEvent OnOrderClear;
 
 protected:
 	UFUNCTION(BlueprintCallable)

@@ -219,6 +219,7 @@ void AStarisPlayerPawn::ProximitySphereBeginOverlap(UPrimitiveComponent* Overlap
 					TitleLabel->AddToPlayerScreen();
 					TitleLabel->Labeled = Labeled;
 					TitleLabel->Setup(Cast<UObject>(Titled));
+					TitleLabel->SetPositionInViewport(FVector2D(100000, 100000));
 
 					if (ActiveLabelExtension && ActiveLabelExtension.GetDefaultObject()->TestTarget(Labeled))
 					{

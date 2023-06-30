@@ -7,9 +7,7 @@
 #include "Empire/Colony.h"
 #include "Empire/Empire.h"
 #include "Empire/EmpirePlanetKnowledge.h"
-#include "Fleet/DiscoverPlanetOrder.h"
 #include "Fleet/Fleet.h"
-#include "Fleet/Ship.h"
 #include "Game/StarisGameInstance.h"
 #include "Game/StarisHUD.h"
 #include "Game/StarisPlayerController.h"
@@ -116,23 +114,6 @@ void UPlanet::SetupToolTip(UToolTip* ToolTip)
 TArray<UContextMenuItem*> UPlanet::CreateContextActionsHovered(IFocusable* Selected)
 {
 	TArray<UContextMenuItem*> Result;
-
-	if (auto Ship = Cast<UShip>(Selected))
-	{
-		if (auto Fleet = Ship->GetFleet())
-		{
-			auto Order = NewObject<UDiscoverPlanetOrder>(Fleet);
-			Order->TargetPlanet = this;
-
-			if (Fleet->CanExecuteOrder(Order))
-			{
-				Result.Add(UContextMenuActionCPP::Create(this, NSLOCTEXT("Planet", "Discover Planet", "Discover Planet"), FText(), FContextMenuActionDelegate::CreateLambda([this, Fleet, Order]()
-				{
-					Fleet->PutOrderAuto(Order);
-				}), nullptr));
-			}
-		}
-	}
 
 	if (UStarisGameInstance::DebugToolsEnabled)
 	{

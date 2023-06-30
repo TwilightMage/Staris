@@ -4,13 +4,16 @@
 #include "Fleet/Fleet.h"
 
 #include "StarisStatics.h"
+#include "Fleet/DiscoverPlanetOrder.h"
 #include "Fleet/FleetOrder.h"
 #include "Fleet/FleetPath.h"
 #include "Fleet/Ship.h"
 #include "Game/StarisHUD.h"
 #include "Game/StarisPlayerController.h"
+#include "UI/ContextMenu.h"
 #include "UI/ToolTip.h"
 #include "Universe/Galaxy.h"
+#include "Universe/Planet.h"
 
 #include "Universe/StarisInstancedStaticMesh.h"
 
@@ -87,6 +90,27 @@ UTexture2D* AFleet::GetIcon() const
 void AFleet::SetupToolTip(UToolTip* ToolTip)
 {
 	ToolTip->AddLine(FText::Format(FTextFormat(NSLOCTEXT("Fleet", "Fleet_Fleet", "Fleet: {0}")), FText::FromString(Title)));
+}
+
+TArray<UContextMenuItem*> AFleet::CreateContextActionsSelected(IFocusable* Hovered)
+{
+	TArray<UContextMenuItem*> Result;
+	
+	if (auto Planet = Cast<UPlanet>(Hovered))
+	{
+		auto Order = NewObject<UDiscoverPlanetOrder>(this);
+		Order->TargetPlanet = Planet;
+
+		if (CanExecuteOrder(Order))
+		{
+			Result.Add(UContextMenuActionCPP::Create(this, NSLOCTEXT("Fleet", "Discover Planet", "Discover Planet"), FText(), FContextMenuActionDelegate::CreateLambda([this, Order]()
+			{
+				PutOrderAuto(Order);
+			}), nullptr));
+		}
+	}
+
+	return Result;
 }
 
 void AFleet::OnSelected()
@@ -168,7 +192,9 @@ void AFleet::PutOrder(UFleetOrder* Order, bool bAssign)
 	}
 
 	Orders.Add(Order);
-
+	OnOrderAdded.Broadcast(Order);
+	OnOrderAdded_K2.Broadcast(Order);
+	
 	if (!OrderExecutionState.ActiveOrder)
 	{
 		StartNextOrder();
@@ -190,6 +216,8 @@ void AFleet::CancelActiveOrder(bool bCancelAllOrders)
 	if (bCancelAllOrders)
 	{
 		Orders.SetNum(0);
+		OnOrderClear.Broadcast();
+		OnOrderClear_K2.Broadcast();
 	}
 }
 
