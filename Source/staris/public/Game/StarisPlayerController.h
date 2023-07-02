@@ -8,6 +8,7 @@
 
 #include "StarisPlayerController.generated.h"
 
+class IGlobalPlaneConsumer;
 class ULabelExtension;
 class USceneLabel;
 class ILabeled;
@@ -16,9 +17,18 @@ class USoundCue;
 class UContextMenu;
 class IFocusable;
 class UToolTip;
+class UBuildMode;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FSelectedFocusableChangedEvent, IFocusable* /* New Selected Focusable */);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FSelectedFocusableChangedDynamicEvent, const TScriptInterface<IFocusable>&, NewSelectedFocusable);
+
+UENUM(BlueprintType)
+enum ETargetedType
+{
+	None,
+	Object,
+	GlobalPlane
+};
 
 UCLASS()
 class STARIS_API AStarisPlayerController : public APlayerController, public IStarisController
@@ -49,6 +59,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, DisplayName="Select Focusable", meta=(AutoCreateRefTerm=NewFocusable))
 	void SelectFocusable_K2(const TScriptInterface<IFocusable>& NewFocusable);
+
+	void RequireGlobalPlane(IGlobalPlaneConsumer* GlobalPlaneConsumer);
+	void FreeGlobalPlane(IGlobalPlaneConsumer* GlobalPlaneConsumer);
+
+	void SwitchBuildMode(bool NewState);
 	
 	UFUNCTION(BlueprintCallable)
 	void PlayNextMusic();
@@ -92,9 +107,19 @@ private:
 	IFocusable* SelectedFocusable;
 
 	UPROPERTY()
+	UUserWidget* WidgetUnderMouse;
+
+	UPROPERTY()
 	UToolTip* CurrentToolTip;
 
+	TArray<IGlobalPlaneConsumer*> GlobalPlaneConsumers;
+
+	FVector2D CachedMousePosition;
+
 	bool AssignOrderDown = false;
+
+	UPROPERTY()
+	UBuildMode* BuildMode;
 	
 	// Context Menu
 	
@@ -103,6 +128,8 @@ private:
 
 	bool HasLocationUnderMouse;
 	FVector LocationUnderMouse;
+
+	ETargetedType TargetedType;
 	
 	UPROPERTY()
 	UContextMenu* CurrentContextMenu;

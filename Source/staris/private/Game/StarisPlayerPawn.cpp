@@ -14,6 +14,7 @@
 #include "Universe/Galaxy.h"
 #include "Universe/GalaxySettingsManager.h"
 #include "..\..\public\Universe\LabeledProxy.h"
+#include "Engine/PointLight.h"
 #include "Universe/Star.h"
 #include "Universe/StarisInstancedStaticMesh.h"
 #include "Universe/System.h"
@@ -193,7 +194,20 @@ void AStarisPlayerPawn::ProximitySphereBeginOverlap(UPrimitiveComponent* Overlap
 		{
 			if (auto Star = Cast<UStar>(Instance->Object))
 			{
-				SystemsInProximity.FindOrAdd(Star->GetSystem())++;
+				auto& SystemInProximity = SystemsInProximity.FindOrAdd(Star->GetSystem());
+
+				if (SystemInProximity.StarsInProximity == 0)
+				{
+					for (auto StarInSystem : Star->GetSystem()->GetStars())
+					{
+						auto StarLight = Galaxy->RequireStarLight();
+						StarLight->SetActorLocation(StarInSystem->GetLocation());
+
+						SystemInProximity.StarLights.Add(StarLight);
+					}
+				}
+				
+				SystemInProximity.StarsInProximity++;
 			}
 
 			auto Labeled = Cast<ILabeled>(Instance->Object);
@@ -253,11 +267,16 @@ void AStarisPlayerPawn::ProximitySphereEndOverlap(UPrimitiveComponent* Overlappe
     			if (auto Star = Cast<UStar>(Instance->Object))
     			{
     				auto System = Star->GetSystem();
-    				if (auto SystemCounter = SystemsInProximity.Find(System))
+    				if (auto SystemInProximity = SystemsInProximity.Find(System))
     				{
-    					(*SystemCounter)--;
-    					if (*SystemCounter <= 0)
+    					SystemInProximity->StarsInProximity--;
+    					if (SystemInProximity->StarsInProximity <= 0)
     					{
+							for (auto StarLight : SystemInProximity->StarLights)
+							{
+								Galaxy->FreeStarLight(StarLight);
+							}
+    						
     						SystemsInProximity.Remove(System);
     					}
     				}

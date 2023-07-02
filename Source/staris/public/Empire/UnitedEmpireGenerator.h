@@ -15,7 +15,7 @@ class STARIS_API UUnitedEmpireGenerator : public UEmpireGenerator
 	GENERATED_BODY()
 
 public:
-	virtual UEmpire* Generate_Implementation(AGalaxy* Galaxy, int32 Seed) override;
+	virtual UEmpire* Generate_Implementation(AGalaxy* Galaxy) override;
 
 	virtual void FillSettingsPanel(USettingsPanel* SettingsPanel, const TSharedPtr<FJsonObject>& Json) override;
 

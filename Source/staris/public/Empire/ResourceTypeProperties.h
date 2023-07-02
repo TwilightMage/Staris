@@ -10,7 +10,7 @@ class UEmpire;
 /**
  * 
  */
-UCLASS()
+UCLASS(Abstract)
 class STARIS_API UResourceTypeProperties : public UCompositeRecordComponent
 {
 	GENERATED_BODY()

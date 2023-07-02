@@ -35,9 +35,12 @@ UPlanet::UPlanet()
 		OrbitPositionsSet = true;
 	}
 	
-	const static auto DiscoverLayerCommand = IConsoleManager::Get().RegisterConsoleCommand(TEXT("Staris.DiscoverPlanetLayer"), TEXT("<Planet ID> <Layer> - Unlock whole layer on the planet provided"), FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+	const static auto DiscoverCommand = IConsoleManager::Get().RegisterConsoleCommand(TEXT("Staris.Discover"), TEXT("<Planet or system ID> (Layer) - Discover specified layer or all layers on a planet or all planets in system"), FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
 	{
-		if (Args.Num() <= 2)
+		const FString EntityIdArg = Args.IsValidIndex(0) ? Args[0] : "";
+		const FString LayerArg = Args.IsValidIndex(1) ? Args[1] : "";
+		
+		if (!EntityIdArg.IsEmpty())
 		{
 			if (!UKismetSystemLibrary::IsDedicatedServer(World))
 			{
@@ -47,12 +50,35 @@ UPlanet::UPlanet()
 					{
 						if (auto Galaxy = GetActorOfClass<AGalaxy>(World))
 						{
-							if (auto Planet = Cast<UPlanet>(Galaxy->GetObjectById(FName(Args[0]))))
+							TArray<UPlanet*> Planets;
+							
+							auto Object = Galaxy->GetObjectById(FName(EntityIdArg));
+							if (auto Planet = Cast<UPlanet>(Object))
+							{
+								Planets.Add(Planet);
+							}
+							else if (auto System = Cast<USystem>(Object))
+							{
+								Planets = System->GetPlanets();
+							}
+
+							for (auto Planet : Planets)
 							{
 								auto Knowledge = Empire->GetOrCreatePlanetKnowledge(Planet);
-								int32 Layer = 0;
-								FDefaultValueHelper::ParseInt(Args[1], Layer);
-								Knowledge->UnlockLayer(Layer);
+
+								if (LayerArg.IsEmpty())
+								{
+									for (int32 i = 0; i < Planet->GetLayers().Num(); i++)
+									{
+										Knowledge->UnlockLayer(i);
+									}
+								}
+								else
+								{
+									int32 Layer = 0;
+									FDefaultValueHelper::ParseInt(LayerArg, Layer);
+									Knowledge->UnlockLayer(Layer);
+								}
 							}
 						}
 					}

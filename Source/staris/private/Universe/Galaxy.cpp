@@ -4,7 +4,9 @@
 
 #include "StarisStatics.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Empire/Empire.h"
+#include "Engine/PointLight.h"
 #include "Game/StarisGameInstance.h"
 #include "Game/StarisGameMode.h"
 #include "Game/StarisGraphicsSettings.h"
@@ -17,6 +19,7 @@
 #include "Universe/StarisInstancedStaticMesh.h"
 #include "Universe/System.h"
 #include "Universe/VanillaGalaxyGenerator.h"
+#include "Universe/VanillaGalaxySettings.h"
 #include "Universe/VanillaStarTypeProperties.h"
 
 AGalaxy::AGalaxy()
@@ -222,6 +225,49 @@ void AGalaxy::RegisterObjectById(const FName& ObjectId, UObject* Object)
 	IdDatabase.Add(ObjectId, Object);
 }
 
+APointLight* AGalaxy::RequireStarLight()
+{
+	if (FreeStarLightPool.IsEmpty())
+	{
+		if (EnsureGalaxySettingsManager())
+		{
+			if (auto VanillaGalaxySettings = GalaxySettingsManager->GetSettings<UVanillaGalaxySettings>())
+			{
+				auto NewStarLight = GetWorld()->SpawnActor<APointLight>();
+				NewStarLight->SetMobility(EComponentMobility::Movable);
+				NewStarLight->PointLightComponent->SetIntensity(6);
+				NewStarLight->PointLightComponent->SetAttenuationRadius(VanillaGalaxySettings->PlanetOrbitRange.Max);
+				NewStarLight->PointLightComponent->SetUseInverseSquaredFalloff(false);
+				NewStarLight->PointLightComponent->SetLightFalloffExponent(2);
+				NewStarLight->PointLightComponent->SetInverseExposureBlend(1);
+		
+				FreeStarLightPool.Add(NewStarLight);
+			}
+		}
+	}
+
+	verify(FreeStarLightPool.Num() > 0);
+
+	auto TakenStarLight = FreeStarLightPool[0];
+	FreeStarLightPool.RemoveAt(0);
+	UsedStarLightPool.Add(TakenStarLight);
+
+	TakenStarLight->PointLightComponent->SetVisibility(true);
+
+	return TakenStarLight;
+}
+
+void AGalaxy::FreeStarLight(APointLight* StarLight)
+{
+	if (UsedStarLightPool.Contains(StarLight))
+	{
+		UsedStarLightPool.Remove(StarLight);
+		FreeStarLightPool.Add(StarLight);
+
+		StarLight->PointLightComponent->SetVisibility(false);
+	}
+}
+
 void AGalaxy::DayPassed()
 {
 	for (auto& Entity : AddDayUpdateCelestialEntities)
@@ -297,7 +343,7 @@ void AGalaxy::DayPassed()
 
 void AGalaxy::Generate()
 {
-	if (auto Settings = GetActorOfClass<AGalaxySettingsManager>(this))
+	if (EnsureGalaxySettingsManager())
 	{
 		if (auto StarisGameInstance = Cast<UStarisGameInstance>(UGameplayStatics::GetGameInstance(this)))
 		{
@@ -305,7 +351,7 @@ void AGalaxy::Generate()
 			generator->GameInstance = StarisGameInstance;
 		
 			FGalaxyMetaData data;
-			generator->GenerateGalaxy(data, 1, Settings, NewObject<UCompositeRecord>());
+			generator->GenerateGalaxy(data, 1, GalaxySettingsManager, NewObject<UCompositeRecord>());
 
 			ApplyPattern(data);
 		}
@@ -315,4 +361,14 @@ void AGalaxy::Generate()
 void AGalaxy::Start()
 {
 	SetTimeScale(1);
+}
+
+bool AGalaxy::EnsureGalaxySettingsManager()
+{
+	if (!GalaxySettingsManager)
+	{
+		GalaxySettingsManager = GetActorOfClass<AGalaxySettingsManager>(this);
+	}
+
+	return GalaxySettingsManager->IsValidLowLevel();
 }

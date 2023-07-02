@@ -23,9 +23,9 @@ class STARIS_API UEmpireGenerator : public UObject
 
 public:
 	UFUNCTION(BlueprintNativeEvent)
-	UEmpire* Generate(AGalaxy* Galaxy, int32 Seed);
+	UEmpire* Generate(AGalaxy* Galaxy);
 
-	virtual UEmpire* Generate_Implementation(AGalaxy* Galaxy, int32 Seed) { return nullptr; }
+	virtual UEmpire* Generate_Implementation(AGalaxy* Galaxy) { return nullptr; }
 
 	virtual void FillSettingsPanel(USettingsPanel* SettingsPanel, const TSharedPtr<FJsonObject>& Json) {}
 

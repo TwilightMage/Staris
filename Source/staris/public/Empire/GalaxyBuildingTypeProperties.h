@@ -4,13 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Universe/CompositeDatabase.h"
-#include "BuildingTypeProperties.generated.h"
+#include "GalaxyBuildingTypeProperties.generated.h"
 
-/**
- * 
- */
 UCLASS(Abstract)
-class STARIS_API UBuildingTypeProperties : public UCompositeRecordComponent
+class STARIS_API UGalaxyBuildingTypeProperties : public UCompositeRecordComponent
 {
 	GENERATED_BODY()
 };

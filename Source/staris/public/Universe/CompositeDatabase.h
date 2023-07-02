@@ -8,16 +8,20 @@
 
 #include "CompositeDatabase.generated.h"
 
-UCLASS(Abstract, Blueprintable)
+class UCompositeDatabasePreset;
+
+UCLASS(EditInlineNew, Abstract, Blueprintable)
 class UCompositeRecordComponent : public UObject
 {
 	GENERATED_BODY()
 };
 
-UCLASS(BlueprintType)
+UCLASS(EditInlineNew, BlueprintType)
 class UCompositeRecord : public UObject
 {
 	GENERATED_BODY()
+
+	friend UCompositeDatabase;
 	
 public:
 	template<typename T>
@@ -32,7 +36,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, DisplayName="Get Component", meta=(DeterminesOutputType=ComponentClass, AutoCreateRefTerm=ComponentClass, DynamicOutputParam=Component))
-	void GetComponent_K2(const TSubclassOf<UCompositeRecordComponent>& ComponentClass, UCompositeRecordComponent*& Component)
+	void GetComponent_K2(UPARAM(meta=(AllowAbstract=false)) const TSubclassOf<UCompositeRecordComponent>& ComponentClass, UCompositeRecordComponent*& Component)
 	{
 		Component = nullptr;
 		if (auto ComponentFound = Components.Find(ComponentClass))
@@ -49,6 +53,7 @@ public:
 			return Cast<ComponentType>(*ComponentFound);
 		}
 
+		auto RecordComponentType = GetRecordComponentType();
 		if (RecordComponentType && !ComponentType::StaticClass()->IsChildOf(RecordComponentType))
 		{
 			return nullptr;
@@ -60,7 +65,7 @@ public:
 	}
 
 	UFUNCTION(BlueprintCallable, DisplayName="Get Or Create Component", meta=(DeterminesOutputType=ComponentClass, AutoCreateRefTerm=ComponentClass, DynamicOutputParam=Component))
-	void GetOrCreateComponent_K2(const TSubclassOf<UCompositeRecordComponent>& ComponentClass, UCompositeRecordComponent*& Component)
+	void GetOrCreateComponent_K2(UPARAM(meta=(AllowAbstract=false)) const TSubclassOf<UCompositeRecordComponent>& ComponentClass, UCompositeRecordComponent*& Component)
 	{
 		Component = nullptr;
 		
@@ -70,9 +75,9 @@ public:
 			return;
 		}
 
-		if (!ComponentClass->IsChildOf(RecordComponentType))
+		if (!ComponentClass->IsChildOf(GetRecordComponentType()))
 		{
-			UE_LOG(LogStats, Error, TEXT("Failed to create composite record component of class %s. Record component base class is %s."), *ComponentClass->GetName(), *RecordComponentType->GetName())
+			UE_LOG(LogStats, Error, TEXT("Failed to create composite record component of class %s. Record component base class is %s."), *ComponentClass->GetName(), *GetRecordComponentType()->GetName())
 			return;
 		}
 
@@ -80,20 +85,22 @@ public:
 		Components.Add(ComponentClass, Component);
 	}
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<UCompositeRecordComponent> RecordComponentType;
+	UFUNCTION(BlueprintPure)
+	TSubclassOf<UCompositeRecordComponent> GetRecordComponentType() const;
 
 private:
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Instanced, meta=(AllowedClasses=RecordComponentType, ExactClass=false))
 	TMap<TSubclassOf<UCompositeRecordComponent>, UCompositeRecordComponent*> Components;
 };
 
-UCLASS(BlueprintType)
+UCLASS(EditInlineNew, BlueprintType)
 class UCompositeDatabase : public UObject
 {
 	GENERATED_BODY()
 
 public:
+	void ApplyPreset(UCompositeDatabasePreset* Preset);
+	
 	UFUNCTION(BlueprintCallable, meta=(AutoCreateRefTerm=Key))
 	UCompositeRecord* GetRecord(const FName& Key)
 	{
@@ -113,7 +120,6 @@ public:
 		{
 			UE_LOG(LogStaris, Warning, TEXT("Record %s in database of %s has been created"), *Key.ToString(), *RecordComponentType->GetName());
 			Record = NewObject<UCompositeRecord>(this);
-			Record->RecordComponentType = RecordComponentType;
 		}
 
 		return Record;
@@ -121,10 +127,31 @@ public:
 
 	const TMap<FName, UCompositeRecord*>& GetAllRecords() const { return Records; }
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(AllowAbstract=true))
 	TSubclassOf<UCompositeRecordComponent> RecordComponentType;
 
 private:
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Instanced)
 	TMap<FName, UCompositeRecord*> Records;
+};
+
+
+UCLASS(EditInlineNew, BlueprintType)
+class UCompositeDatabaseRecordPreset : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, Instanced)
+	TArray<UCompositeRecordComponent*> Components;
+};
+
+UCLASS(EditInlineNew, BlueprintType)
+class UCompositeDatabasePreset : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	UPROPERTY(EditAnywhere, Instanced)
+	TMap<FName, UCompositeDatabaseRecordPreset*> Records;
 };

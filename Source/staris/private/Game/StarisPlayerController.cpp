@@ -6,8 +6,11 @@
 #include "Empire/Empire.h"
 #include "Focusable.h"
 #include "Components/AudioComponent.h"
+#include "Game/BuildMode.h"
+#include "Game/GlobalPlaneConsumer.h"
 #include "Game/StarisPlayerPawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "UI/ContextMenu.h"
 #include "UI/ToolTip.h"
 #include "Universe/Planet.h"
@@ -36,98 +39,142 @@ void AStarisPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
-	UKismetSystemLibrary::ExecuteConsoleCommand(this, "stat fps");
-	UKismetSystemLibrary::ExecuteConsoleCommand(this, "stat unit");
-	UKismetSystemLibrary::ExecuteConsoleCommand(this, "t.maxfps 300");
+	if (IsLocalPlayerController())
+	{
+		SwitchBuildMode(true);
+		
+		UKismetSystemLibrary::ExecuteConsoleCommand(this, "stat fps");
+		UKismetSystemLibrary::ExecuteConsoleCommand(this, "stat unit");
+		UKismetSystemLibrary::ExecuteConsoleCommand(this, "t.maxfps 300");
 
-	FInputModeGameAndUI InputMode;
-	InputMode.SetHideCursorDuringCapture(false);
-	SetInputMode(InputMode);
+		FInputModeGameAndUI InputMode;
+		InputMode.SetHideCursorDuringCapture(false);
+		SetInputMode(InputMode);
 
-	InputComponent->BindAction("AssignOrder", IE_Pressed, this, &AStarisPlayerController::AssignOrderPressed);
-	InputComponent->BindAction("AssignOrder", IE_Released, this, &AStarisPlayerController::AssignOrderReleased);
+		InputComponent->BindAction("AssignOrder", IE_Pressed, this, &AStarisPlayerController::AssignOrderPressed);
+		InputComponent->BindAction("AssignOrder", IE_Released, this, &AStarisPlayerController::AssignOrderReleased);
 
-	PlayNextMusic();
+		PlayNextMusic();
+	}
 }
 
 void AStarisPlayerController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	FHitResult Hit;
-	GetHitResultUnderCursorByChannel(TraceTypeQuery1, false, Hit);
-
-	IFocusable* NewTargetedFocusable = nullptr;
-	
-	if (auto Component = Hit.Component.Get())
+	if (IsLocalPlayerController())
 	{
-		LocationUnderMouse = Hit.Location;
-		HasLocationUnderMouse = true;
-		
-		if (auto Focusable = Cast<IFocusable>(Component))
+		if (ULocalPlayer* LocalPlayer = Cast<ULocalPlayer>(Player))
 		{
-			NewTargetedFocusable = Focusable;
-		}
-		else if (auto StarisInstancedMesh = Cast<UStarisInstancedStaticMesh>(Component))
-		{
-			if (auto InstanceRef = StarisInstancedMesh->TryGetObjectRef(Hit.Item))
+			if (LocalPlayer && LocalPlayer->ViewportClient)
 			{
-				if (auto FocusableInstance = Cast<IFocusable>(InstanceRef->Object))
+				LocalPlayer->ViewportClient->GetMousePosition(CachedMousePosition);
+			}
+		}
+			
+		FHitResult Hit;
+		GetHitResultUnderCursorByChannel(TraceTypeQuery1, false, Hit);
+
+		IFocusable* NewTargetedFocusable = nullptr;
+
+		TargetedType = None;
+		
+		if (auto Component = Hit.Component.Get())
+		{
+			LocationUnderMouse = Hit.Location;
+			HasLocationUnderMouse = true;
+			
+			if (auto Focusable = Cast<IFocusable>(Component))
+			{
+				NewTargetedFocusable = Focusable;
+			}
+			else if (auto StarisInstancedMesh = Cast<UStarisInstancedStaticMesh>(Component))
+			{
+				if (auto InstanceRef = StarisInstancedMesh->TryGetObjectRef(Hit.Item))
 				{
-					NewTargetedFocusable = FocusableInstance;
+					if (auto FocusableInstance = Cast<IFocusable>(InstanceRef->Object))
+					{
+						NewTargetedFocusable = FocusableInstance;
+						TargetedType = Object;
+					}
 				}
 			}
 		}
-	}
-	else
-	{
-		HasLocationUnderMouse = false;
-	}
+		else
+		{
+			HasLocationUnderMouse = false;
+		}
 
-	if (NewTargetedFocusable != FocusableUnderMouse)
-	{
+		if (GlobalPlaneConsumers.Num() > 0)
+		{
+			FVector WorldOrigin;
+			FVector WorldDirection;
+			if (UGameplayStatics::DeprojectScreenToWorld(this, CachedMousePosition, WorldOrigin, WorldDirection) == true)
+			{
+				float T;
+				FVector HitLocation;
+				if (UKismetMathLibrary::LinePlaneIntersection(WorldOrigin, WorldOrigin + WorldDirection * 10000000, FPlane(FVector::Zero(), FVector::UpVector), T, HitLocation))
+				{
+					if (HasLocationUnderMouse)
+					{
+						if (FVector::Distance(WorldOrigin, HitLocation) < FVector::Distance(WorldOrigin, LocationUnderMouse))
+						{
+							LocationUnderMouse = HitLocation;
+							NewTargetedFocusable = nullptr;
+							TargetedType = GlobalPlane;
+						}
+					}
+					else
+					{
+						HasLocationUnderMouse = true;
+						LocationUnderMouse = HitLocation;
+						TargetedType = GlobalPlane;
+					}
+				}
+			}
+		}
+
+		if (NewTargetedFocusable != FocusableUnderMouse)
+		{
+			if (CurrentToolTip)
+			{
+				CurrentToolTip->RemoveFromParent();
+			}
+			
+			FocusableUnderMouse = NewTargetedFocusable;
+
+			if (FocusableUnderMouse)
+			{
+				CurrentToolTip = NewObject<UToolTip>(this, ToolTipClass);
+				CurrentToolTip->SetOwningPlayer(this);
+				CurrentToolTip->AddToPlayerScreen(1001);
+					
+				FocusableUnderMouse->SetupToolTip(CurrentToolTip);
+			}
+		}
+
+		int32 ViewportWidth;
+		int32 ViewportHeight;
+		GetViewportSize(ViewportWidth, ViewportHeight);
+
 		if (CurrentToolTip)
 		{
-			CurrentToolTip->RemoveFromParent();
-		}
-		
-		FocusableUnderMouse = NewTargetedFocusable;
+			FVector2D DesiredToolTipSize = CurrentToolTip->GetDesiredSize();
 
-		if (FocusableUnderMouse)
+			CurrentToolTip->SetPositionInViewport(FVector2D(FMath::Min(CachedMousePosition.X + 6, ViewportWidth - DesiredToolTipSize.X), FMath::Min(CachedMousePosition.Y + 15, ViewportHeight - DesiredToolTipSize.Y)));
+		}
+
+		if (CurrentContextMenu && HasContextMenuAnchor)
 		{
-			CurrentToolTip = NewObject<UToolTip>(this, ToolTipClass);
-			CurrentToolTip->SetOwningPlayer(this);
-			CurrentToolTip->AddToPlayerScreen(1001);
-				
-			FocusableUnderMouse->SetupToolTip(CurrentToolTip);
+			FVector2D DesiredContextMenuSize = CurrentContextMenu->GetDesiredSize();
+			
+			FVector2D ScreenPosition;
+			UGameplayStatics::ProjectWorldToScreen(this, ContextMenuAnchor, ScreenPosition);
+			CurrentContextMenu->SetPositionInViewport(FVector2D(
+				FMath::Clamp(ScreenPosition.X, 0, ViewportWidth - DesiredContextMenuSize.X),
+				FMath::Clamp(ScreenPosition.Y, 0, ViewportHeight - DesiredContextMenuSize.Y)
+				));
 		}
-	}
-
-	int32 ViewportWidth;
-	int32 ViewportHeight;
-	GetViewportSize(ViewportWidth, ViewportHeight);
-
-	if (CurrentToolTip)
-	{
-		float MouseX;
-		float MouseY;
-		GetMousePosition(MouseX, MouseY);
-
-		FVector2D DesiredToolTipSize = CurrentToolTip->GetDesiredSize();
-
-		CurrentToolTip->SetPositionInViewport(FVector2D(FMath::Min(MouseX + 6, ViewportWidth - DesiredToolTipSize.X), FMath::Min(MouseY + 15, ViewportHeight - DesiredToolTipSize.Y)));
-	}
-
-	if (CurrentContextMenu && HasContextMenuAnchor)
-	{
-		FVector2D DesiredContextMenuSize = CurrentContextMenu->GetDesiredSize();
-		
-		FVector2D ScreenPosition;
-		UGameplayStatics::ProjectWorldToScreen(this, ContextMenuAnchor, ScreenPosition);
-		CurrentContextMenu->SetPositionInViewport(FVector2D(
-			FMath::Clamp(ScreenPosition.X, 0, ViewportWidth - DesiredContextMenuSize.X),
-			FMath::Clamp(ScreenPosition.Y, 0, ViewportHeight - DesiredContextMenuSize.Y)
-			));
 	}
 }
 
@@ -188,9 +235,16 @@ void AStarisPlayerController::Click()
 		CurrentContextMenu = nullptr;
 	}
 
-	if (FocusableUnderMouse)
+	if (TargetedType == Object && FocusableUnderMouse)
 	{
 		SelectFocusable(FocusableUnderMouse);
+	}
+	else if (TargetedType == GlobalPlane)
+	{
+		for (const auto Consumer : GlobalPlaneConsumers)
+		{
+			Consumer->GlobalPlaneClicked(LocationUnderMouse);
+		}
 	}
 }
 
@@ -289,6 +343,30 @@ void AStarisPlayerController::SelectFocusable(IFocusable* NewFocusable)
 void AStarisPlayerController::SelectFocusable_K2(const TScriptInterface<IFocusable>& NewFocusable)
 {
 	SelectFocusable(NewFocusable.GetInterface());
+}
+
+void AStarisPlayerController::RequireGlobalPlane(IGlobalPlaneConsumer* GlobalPlaneConsumer)
+{
+	GlobalPlaneConsumers.Add(GlobalPlaneConsumer);
+}
+
+void AStarisPlayerController::FreeGlobalPlane(IGlobalPlaneConsumer* GlobalPlaneConsumer)
+{
+	GlobalPlaneConsumers.Remove(GlobalPlaneConsumer);
+}
+
+void AStarisPlayerController::SwitchBuildMode(bool NewState)
+{
+	if (NewState && !BuildMode)
+	{
+		BuildMode = NewObject<UBuildMode>(this);
+		RequireGlobalPlane(BuildMode);
+	}
+	else if (!NewState && BuildMode)
+	{
+		FreeGlobalPlane(BuildMode);
+		BuildMode = nullptr;
+	}
 }
 
 void AStarisPlayerController::PlayNextMusic()

@@ -8,6 +8,7 @@
 
 #include "StarisGameInstance.generated.h"
 
+class UCompositeDatabasePreset;
 class UCompositeDatabase;
 DECLARE_MULTICAST_DELEGATE_TwoParams(FStarisGameStageChanged, EGameStage /* Old Game Stage */, EGameStage /* New Game Stage */);
 
@@ -42,6 +43,9 @@ public:
 	UFUNCTION(BlueprintPure)
 	UCompositeDatabase* GetBuildingTypeDatabase() const { return BuildingTypeDatabase; }
 
+	UFUNCTION(BlueprintPure)
+	UCompositeDatabase* GetGalaxyBuildingTypeDatabase() const { return GalaxyBuildingTypeDatabase; }
+
 	FStarisGameStageChanged GameStageChanged;
 	
 	inline static bool DebugToolsEnabled =
@@ -55,12 +59,27 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	EGameStage GameStage = EGameStage::Loading;
 
+	UPROPERTY(EditAnywhere, Instanced)
+	UCompositeDatabasePreset* StarTypeDatabasePreset;
+	
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	UCompositeDatabase* StarTypeDatabase;
+
+	UPROPERTY(EditAnywhere, Instanced)
+	UCompositeDatabasePreset* ResourceTypeDatabasePreset;
 
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	UCompositeDatabase* ResourceTypeDatabase;
 
+	UPROPERTY(EditAnywhere, Instanced)
+	UCompositeDatabasePreset* BuildingTypeDatabasePreset;
+	
 	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
 	UCompositeDatabase* BuildingTypeDatabase;
+
+	UPROPERTY(EditAnywhere, Instanced)
+	UCompositeDatabasePreset* GalaxyBuildingTypeDatabasePreset;
+	
+	UPROPERTY(BlueprintReadOnly, meta=(AllowPrivateAccess))
+	UCompositeDatabase* GalaxyBuildingTypeDatabase;
 };

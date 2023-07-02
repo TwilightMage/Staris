@@ -35,12 +35,6 @@ FName GenerateId(int32 Seed, TSet<FName>& UsedIDs)
 	return FName(Result);
 }
 
-template<typename T>
-T GetRandomSetItem(const TSet<T>& Container, FRandomStream& Random) { return Container[FSetElementId::FromInteger(Random.RandRange(0, Container.Num() - 1))]; }
-
-template<typename T>
-T GetRandomArrayItem(const TArray<T>& Container, FRandomStream& Random) { return Container[Random.RandRange(0, Container.Num() - 1)]; }
-
 void UVanillaGalaxyGenerator::GenerateGalaxy(FGalaxyMetaData& Data, int32 SubSeed, AGalaxySettingsManager* SettingsManager, UCompositeRecord* Context) const
 {
 	if (const auto Settings = SettingsManager->GetSettings<UVanillaGalaxySettings>())
@@ -64,7 +58,7 @@ void UVanillaGalaxyGenerator::GenerateGalaxy(FGalaxyMetaData& Data, int32 SubSee
 		for (auto ResourceType : GameInstance->GetResourceTypeDatabase()->GetAllRecords())
 		{
 			auto VanillaResourceProps = ResourceType.Value->GetOrCreateComponent<UVanillaResourceTypeProperties>();
-			if (!VanillaResourceProps->MineralDensityPerLayer.IsEmpty())
+			if (VanillaResourceProps->bIsMineral)
 			{
 				VanillaContext->MineralResourceTypes.Add({
 					ResourceType.Value,
@@ -304,11 +298,12 @@ void UVanillaGalaxyGenerator::GeneratePlanet(FPlanetMetaData& Data, int32 SubSee
 		{
 			VanillaContext->PlanetMineralDistribution.Add({
 				Mineral.Record,
-				Mineral.VanillaProps,
+				Mineral.VanillaProps->MineralDensityPerLayerCurve.GetRichCurve(),
+				Mineral.VanillaProps->MineralDensityPerTemperatureCurve.GetRichCurve(),
 				Random.FRand() * 2
 			});
 		}
-		VanillaContext->PlanetMineralDistribution.Add({nullptr, nullptr, 1});
+		VanillaContext->PlanetMineralDistribution.Add({nullptr, nullptr, nullptr, 1});
 
 		VanillaContext->CurrentPlanetLayerIndex = 0;
 		for (auto& PlanetLayer : Data.Layers)
@@ -336,10 +331,13 @@ void UVanillaGalaxyGenerator::GeneratePlanetLayer(FPlanetLayer& Data, int32 SubS
 		for (int32 i = 0; i < VanillaContext->PlanetMineralDistribution.Num(); i++)
 		{
 			auto& Mineral = VanillaContext->PlanetMineralDistribution[i];
+
+			float Chance = 1;
+
+			if (Mineral.LayerDensityCurve) Chance *= Mineral.LayerDensityCurve->Eval(VanillaContext->CurrentPlanetLayerIndex);
+			if (Mineral.TemperatureDensityCurve) Chance *= Mineral.TemperatureDensityCurve->Eval(VanillaContext->CurrentPlanet->Temperature);
 			
-			if (Mineral.VanillaProps && VanillaContext->CurrentPlanetLayerIndex >= Mineral.VanillaProps->MineralDensityPerLayer.Num()) continue;
-			
-			LayerMineralDistribution.AddDistribution(Mineral.Record, Mineral.Density * (Mineral.VanillaProps ? Mineral.VanillaProps->MineralDensityPerLayer[VanillaContext->CurrentPlanetLayerIndex] : 1));
+			LayerMineralDistribution.AddDistribution(Mineral.Record, Chance);
 		}
 
 		for (int32 i = 0; i < LayerSize; i++)

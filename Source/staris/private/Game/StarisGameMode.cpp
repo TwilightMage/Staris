@@ -117,8 +117,7 @@ void AStarisGameMode::Setup()
 	{
 		Galaxy->OnGameStarted.AddUObject(this, &AStarisGameMode::GameStarted);
 
-		auto EmpireGenerator = NewObject<UUnitedEmpireGenerator>();
-		int32 EmpireSeed = 0;
+		auto EmpireGenerator = NewObject<UUnitedEmpireGenerator>(this);
 		auto EmpireRace = NewObject<URace>();
 		EmpireGenerator->EmpireRaces = { EmpireRace };
 		
@@ -129,7 +128,6 @@ void AStarisGameMode::Setup()
 			TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "CapitalTitle", EmpireGenerator->CapitalTitle);
 			TRY_READ_SETTINGS_NUMBER(EmpireGeneratorSettings, "DesiredPopulation", EmpireGenerator->TotalPops);
 			TRY_READ_SETTINGS_STRING(EmpireGeneratorSettings, "FounderRace", EmpireRace->Title);
-			TRY_READ_SETTINGS_NUMBER(EmpireGeneratorSettings, "Seed", EmpireSeed);
 		}
 		else
 		{
@@ -138,10 +136,9 @@ void AStarisGameMode::Setup()
 			EmpireGenerator->CapitalTitle = "Terra";
 			EmpireGenerator->TotalPops = 8000000;
 			EmpireRace->Title = "Foxus";
-			EmpireSeed = 0;
 		}
 		
-		Empires.Add(EmpireGenerator->Generate(Galaxy, EmpireSeed));
+		Empires.Add(EmpireGenerator->Generate(Galaxy));
 	}
 	
 	SetupDone = true;

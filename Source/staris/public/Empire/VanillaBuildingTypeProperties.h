@@ -7,10 +7,7 @@
 #include "Universe/CompositeDatabase.h"
 #include "VanillaBuildingTypeProperties.generated.h"
 
-/**
- * 
- */
-UCLASS()
+UCLASS(EditInlineNew)
 class STARIS_API UVanillaBuildingTypeProperties : public UBuildingTypeProperties
 {
 	GENERATED_BODY()

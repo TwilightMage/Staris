@@ -3,11 +3,15 @@
 #include "Universe/System.h"
 
 #include "StarisStatics.h"
+#include "Components/PointLightComponent.h"
+#include "Engine/PointLight.h"
 #include "Game/StarisGameInstance.h"
 #include "Universe/Galaxy.h"
+#include "Universe/GalaxySettingsManager.h"
 #include "Universe/LetterNames.h"
 #include "Universe/Planet.h"
 #include "Universe/Star.h"
+#include "Universe/VanillaGalaxySettings.h"
 
 USystem::USystem()
 {
@@ -46,6 +50,9 @@ void USystem::RenameSystem(const FString& NewName, bool PropagateToChildren)
 
 void USystem::ApplyPattern_Implementation(const FSystemMetaData& Data)
 {
+	auto GalaxySettingsManager = GetActorOfClass<AGalaxySettingsManager>(this);
+	auto VanillaGalaxySettings = GalaxySettingsManager->GetSettings<UVanillaGalaxySettings>();
+	
 	if (!Id.IsNone())
 	{
 		UE_LOG(LogStaris, Error, TEXT("Pattern already has been applied to star system %s"), *Id.ToString())

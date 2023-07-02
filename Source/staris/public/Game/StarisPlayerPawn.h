@@ -7,6 +7,7 @@
 
 #include "StarisPlayerPawn.generated.h"
 
+class APointLight;
 class USceneLabel;
 class UTitleLabel;
 class USphereComponent;
@@ -16,6 +17,18 @@ class USpringArmComponent;
 class UCameraComponent;
 class ILabeled;
 class UInputComponent;
+
+USTRUCT()
+struct FSystemInProximity
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 StarsInProximity;
+
+	UPROPERTY()
+	TArray<APointLight*> StarLights;
+};
 
 UCLASS()
 class STARIS_API AStarisPlayerPawn : public APawn
@@ -96,5 +109,5 @@ private:
 	TSubclassOf<ULabelExtension> ActiveLabelExtension;
 
 	UPROPERTY()
-	TMap<USystem*, int32> SystemsInProximity;
+	TMap<USystem*, FSystemInProximity> SystemsInProximity;
 };

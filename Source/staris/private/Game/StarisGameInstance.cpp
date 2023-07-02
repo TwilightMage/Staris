@@ -6,6 +6,7 @@
 #include "Empire/BuildingTypeProperties.h"
 #include "Empire/ResourceTypeProperties.h"
 #include "Empire/VanillaBuildingTypeProperties.h"
+#include "Empire/VanillaGalaxyBuildingTypeProperties.h"
 #include "Empire/VanillaResourceTypeProperties.h"
 #include "GenericPlatform/GenericPlatformHttp.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -20,19 +21,19 @@ void UStarisGameInstance::InitAssets_Implementation ()
 
 	ResourceProps = ResourceTypeDatabase->GetOrCreateRecord("ferite")->GetOrCreateComponent<UVanillaResourceTypeProperties>();
 	ResourceProps->Title = NSLOCTEXT("Resources", "Ferite", "Ferite");
-	ResourceProps->MineralDensityPerLayer = {0.5, 0.6, 0.9};
+	//ResourceProps->MineralDensityPerLayer = {0.5, 0.6, 0.9};
 
 	ResourceProps = ResourceTypeDatabase->GetOrCreateRecord("gold")->GetOrCreateComponent<UVanillaResourceTypeProperties>();
 	ResourceProps->Title = NSLOCTEXT("Resources", "Gold", "Gold");
-	ResourceProps->MineralDensityPerLayer = {0.2, 0.3, 0.4};
+	//ResourceProps->MineralDensityPerLayer = {0.2, 0.3, 0.4};
 
 	ResourceProps = ResourceTypeDatabase->GetOrCreateRecord("titanium")->GetOrCreateComponent<UVanillaResourceTypeProperties>();
 	ResourceProps->Title = NSLOCTEXT("Resources", "Titanium", "Titanium");
-	ResourceProps->MineralDensityPerLayer = {0.4, 0.5, 0.7};
+	//ResourceProps->MineralDensityPerLayer = {0.4, 0.5, 0.7};
 
 	ResourceProps = ResourceTypeDatabase->GetOrCreateRecord("aluminium")->GetOrCreateComponent<UVanillaResourceTypeProperties>();
 	ResourceProps->Title = NSLOCTEXT("Resources", "Aluminium", "Aluminium");
-	ResourceProps->MineralDensityPerLayer = {0.4, 0.5, 0.3};
+	//ResourceProps->MineralDensityPerLayer = {0.4, 0.5, 0.3};
 	
 	UVanillaBuildingTypeProperties* BuildingProps;
 
@@ -47,6 +48,17 @@ void UStarisGameInstance::InitAssets_Implementation ()
 	BuildingProps->Description = NSLOCTEXT("Buildings", "Dome_Description", "Habitants can live under that dome. Partly negates disadvantages of extreme temperature and toxic atmosphere.");
 	BuildingProps->SingleOfType = true;
 	BuildingProps->AddFlags = {"dome", "ignore_temperature"};
+
+	UVanillaGalaxyBuildingTypeProperties* GalaxyBuildingProps;
+
+	GalaxyBuildingProps = GalaxyBuildingTypeDatabase->GetOrCreateRecord("system_outpost")->GetOrCreateComponent<UVanillaGalaxyBuildingTypeProperties>();
+	GalaxyBuildingProps->Title = NSLOCTEXT("GalaxyBuildings", "System Outpost", "System Outpost");
+	GalaxyBuildingProps->BuildRequirements = {
+		{"titanium", 25},
+		{"ferite", 5},
+		{"gold", 5}
+	};
+	GalaxyBuildingProps->BaseBuildTime = 30;
 }
 
 UStarisGameInstance::UStarisGameInstance()
@@ -64,12 +76,21 @@ void UStarisGameInstance::Init()
 
 	StarTypeDatabase = NewObject<UCompositeDatabase>(this);
 	StarTypeDatabase->RecordComponentType = UStarTypeProperties::StaticClass();
+	StarTypeDatabase->ApplyPreset(StarTypeDatabasePreset);
 
 	ResourceTypeDatabase = NewObject<UCompositeDatabase>(this);
 	ResourceTypeDatabase->RecordComponentType = UResourceTypeProperties::StaticClass();
+	ResourceTypeDatabase->ApplyPreset(ResourceTypeDatabasePreset);
 
 	BuildingTypeDatabase = NewObject<UCompositeDatabase>(this);
 	BuildingTypeDatabase->RecordComponentType = UBuildingTypeProperties::StaticClass();
+	BuildingTypeDatabase->ApplyPreset(BuildingTypeDatabasePreset);
+
+	GalaxyBuildingTypeDatabase = NewObject<UCompositeDatabase>(this);
+	GalaxyBuildingTypeDatabase->RecordComponentType = UGalaxyBuildingTypeProperties::StaticClass();
+	GalaxyBuildingTypeDatabase->ApplyPreset(GalaxyBuildingTypeDatabasePreset);
+	
+	return;
 
 	InitAssets();
 }

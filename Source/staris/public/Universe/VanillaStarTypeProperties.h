@@ -7,10 +7,7 @@
 
 #include "VanillaStarTypeProperties.generated.h"
 
-/**
- * 
- */
-UCLASS()
+UCLASS(EditInlineNew)
 class STARIS_API UVanillaStarTypeProperties : public UStarTypeProperties
 {
 	GENERATED_BODY()

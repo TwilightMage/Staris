@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Abstract)
 class STARIS_API UShipTypeProperties : public UCompositeRecordComponent
 {
 	GENERATED_BODY()

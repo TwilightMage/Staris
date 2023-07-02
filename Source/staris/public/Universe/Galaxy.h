@@ -8,6 +8,7 @@
 
 #include "Galaxy.generated.h"
 
+class APointLight;
 class AFleet;
 class UShip;
 class UColony;
@@ -108,6 +109,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Game Settings")
 	UMaterial* PlanetMaterial;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Game Settings")
+	UMaterial* BuildingPreviewMaterial;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Game Settings")
 	UMaterialParameterCollection* MaterialParameterCollection;
 	
@@ -149,6 +153,9 @@ public:
 	UPROPERTY(BlueprintAssignable, DisplayName="On Date Updated")
 	FGalaxyDateUpdatedDynamicEvent OnDateUpdated_K2;
 	FGalaxyDateUpdatedEvent OnDateUpdated;
+
+	APointLight* RequireStarLight();
+	void FreeStarLight(APointLight* StarLight);
 
 protected:
 	UFUNCTION()
@@ -200,4 +207,16 @@ protected:
 	TArray<ICelestialEntity*> YearUpdateCelestialEntities;
 	TArray<ICelestialEntity*> AddYearUpdateCelestialEntities;
 	TArray<ICelestialEntity*> RemoveYearUpdateCelestialEntities;
+
+private:
+	bool EnsureGalaxySettingsManager();
+	
+	UPROPERTY()
+	AGalaxySettingsManager* GalaxySettingsManager;
+	
+	UPROPERTY()
+	TArray<APointLight*> FreeStarLightPool;
+
+	UPROPERTY()
+	TArray<APointLight*> UsedStarLightPool;
 };

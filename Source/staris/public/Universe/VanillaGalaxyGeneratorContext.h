@@ -28,7 +28,8 @@ public:
 	struct S2
 	{
 		UCompositeRecord* Record;
-		UVanillaResourceTypeProperties* VanillaProps;
+		FRichCurve* LayerDensityCurve = nullptr;
+		FRichCurve* TemperatureDensityCurve = nullptr;
 		float Density;
 	};
 	

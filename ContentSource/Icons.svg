@@ -7,7 +7,7 @@
    viewBox="0 0 39.687499 39.6875"
    version="1.1"
    id="svg5"
-   inkscape:export-filename="..\Content\Textures\UI\Star.png"
+   inkscape:export-filename="..\Content\Textures\UI\Construction.png"
    inkscape:export-xdpi="96"
    inkscape:export-ydpi="96"
    inkscape:version="1.2.2 (732a01da63, 2022-12-09)"
@@ -28,14 +28,14 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="5.9651515"
-     inkscape:cx="59.260859"
-     inkscape:cy="64.70917"
+     inkscape:cx="56.746254"
+     inkscape:cy="73.761748"
      inkscape:window-width="1920"
      inkscape:window-height="1017"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer7" />
+     inkscape:current-layer="layer10" />
   <defs
      id="defs2">
     <marker
@@ -203,9 +203,9 @@
      inkscape:groupmode="layer"
      id="layer7"
      inkscape:label="Star"
-     style="display:inline">
+     style="display:none">
     <circle
-       style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:1.32291667;stroke-dasharray:none;stroke-opacity:1"
+       style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
        id="path4082"
        cx="19.84375"
        cy="19.84375"
@@ -288,5 +288,43 @@
        cy="27.500002"
        r="3"
        inkscape:label="Electron1" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer10"
+     inkscape:label="ConstructionFleet">
+    <g
+       id="g5344"
+       transform="rotate(45,19.843749,19.84375)"
+       style="display:inline">
+      <rect
+         style="fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+         id="rect5337"
+         width="5.2916665"
+         height="15.875"
+         x="17.197916"
+         y="23.8125"
+         rx="0.79374999" />
+      <path
+         id="rect5339"
+         style="fill:#ffffff;stroke-width:1.42472"
+         d="m 18.520833,0 h 2.645834 V 2.38125 L 20.637499,3.7041666 V 24.077083 h -1.5875 V 3.7041666 L 18.520833,2.38125 Z"
+         sodipodi:nodetypes="ccccccccc" />
+    </g>
+    <g
+       id="g5488"
+       transform="rotate(-45,19.84375,19.84375)">
+      <rect
+         style="display:inline;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:1.32292;stroke-dasharray:none;stroke-opacity:1"
+         id="rect5346"
+         width="3.96875"
+         height="23.8125"
+         x="17.859375"
+         y="7.9375" />
+      <path
+         id="path5351"
+         style="fill:#ffffff;stroke-width:3.50921"
+         d="M 23.171195,0 V 0.82217204 4.6643148 L 19.84375,6.5851278 16.516305,4.6643148 V 0.82217204 0.00465088 A 5.5887098,5.5887098 0 0 0 14.254944,4.4896484 5.5887098,5.5887098 0 0 0 19.84375,10.078455 5.5887098,5.5887098 0 0 0 25.432556,4.4896484 5.5887098,5.5887098 0 0 0 23.171195,0 Z M 19.84375,29.609045 a 5.5887098,5.5887098 0 0 0 -5.588806,5.588807 5.5887098,5.5887098 0 0 0 2.261361,4.489648 v -0.822172 -3.842143 l 3.327445,-1.920813 3.327445,1.920813 v 3.842143 0.817521 a 5.5887098,5.5887098 0 0 0 2.261361,-4.484997 5.5887098,5.5887098 0 0 0 -5.588806,-5.588807 z" />
+    </g>
   </g>
 </svg>
